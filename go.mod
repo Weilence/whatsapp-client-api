@@ -9,7 +9,7 @@ require (
 	github.com/gin-gonic/gin v1.7.7
 	github.com/mattn/go-ieproxy v0.0.3
 	github.com/mattn/go-sqlite3 v1.14.12
-	go.mau.fi/whatsmeow v0.0.0-20220319105109-ee347f8c0a14
+	go.mau.fi/whatsmeow v0.0.0-20220329130652-2ecc90044f20
 	google.golang.org/protobuf v1.28.0
 	gorm.io/driver/sqlite v1.3.1
 	gorm.io/gorm v1.23.3
@@ -33,8 +33,8 @@ require (
 	github.com/ugorji/go/codec v1.2.7 // indirect
 	go.mau.fi/libsignal v0.0.0-20220315232917-871a40435d3b // indirect
 	golang.org/x/crypto v0.0.0-20220321153916-2c7772ba3064 // indirect
-	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
-	golang.org/x/sys v0.0.0-20220319134239-a9b59b0215f8 // indirect
+	golang.org/x/net v0.0.0-20220325170049-de3da57026de // indirect
+	golang.org/x/sys v0.0.0-20220328115105-d36c6a25d886 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
