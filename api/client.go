@@ -26,13 +26,8 @@ func ClientLogin(c *gin.Context) {
 		client.Login()
 
 		sse.Encode(c.Writer, sse.Event{
-			Event: "jid",
+			Event: "success",
 			Data:  client.Client.Store.ID.String(),
-		})
-
-		sse.Encode(c.Writer, sse.Event{
-			Event: "message",
-			Data:  "",
 		})
 		return
 	}
