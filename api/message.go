@@ -42,7 +42,7 @@ func MessageSend(c *gin.Context) {
 	if req.File.Size == 0 {
 		client.SendTextMessage(jid, req.Text)
 
-		model.DB.Save(&model.WhatsappMessage{
+		model.DB.Save(&model.WhatsappSendMessage{
 			From: req.JID,
 			To:   jid.String(),
 			Type: req.Type,
@@ -56,7 +56,7 @@ func MessageSend(c *gin.Context) {
 		} else if req.Type == 2 {
 			client.SendDocumentMessage(jid, bytes, req.Text)
 		}
-		model.DB.Save(&model.WhatsappMessage{
+		model.DB.Save(&model.WhatsappSendMessage{
 			From:     req.JID,
 			To:       jid.String(),
 			Type:     req.Type,
@@ -74,7 +74,7 @@ func MessageQuery(c *gin.Context) {
 	var list []MessagesRes
 
 	var total int64
-	model.DB.Model(&model.WhatsappMessage{}).
+	model.DB.Model(&model.WhatsappSendMessage{}).
 		Count(&total).
 		Order("id desc").
 		Limit(req.Limit()).

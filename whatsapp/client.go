@@ -4,16 +4,23 @@ import (
 	"context"
 	"github.com/mattn/go-ieproxy"
 	"go.mau.fi/whatsmeow"
+	"go.mau.fi/whatsmeow/binary/proto"
 	"go.mau.fi/whatsmeow/store"
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
-	waLog "go.mau.fi/whatsmeow/util/log"
+	log "go.mau.fi/whatsmeow/util/log"
+	"time"
+	"whatsapp-client/model"
 )
 
 type Client struct {
 	*whatsmeow.Client
 	groups    []*types.GroupInfo
 	autoReply AutoReply
+}
+
+func (c Client) GetDeviceJID() string {
+	return c.Store.ID.String()
 }
 
 var onlineClients []*Client
@@ -34,18 +41,85 @@ func NewClient(id string) (*Client, <-chan whatsmeow.QRChannelItem) {
 		}
 	}
 
-	clientLog := waLog.Stdout("Client", "DEBUG", true)
+	clientLog := log.Stdout("Client", "DEBUG", true)
 	client := &Client{Client: whatsmeow.NewClient(device, clientLog)}
 	client.SetProxy(ieproxy.GetProxyFunc())
 	client.EnableAutoReply()
-	client.AddEventHandler(func(evt interface{}) {
-		switch evt.(type) {
+	client.AddEventHandler(func(rawEvt interface{}) {
+		switch evt := rawEvt.(type) {
 		case *events.ClientOutdated:
 		case *events.LoggedOut:
 			for i, c := range onlineClients {
 				if c.Store.ID == client.Store.ID {
 					onlineClients = append(onlineClients[:i], onlineClients[i+1:]...)
 					return
+				}
+			}
+		case *events.Message:
+			var cm model.WhatsappChatMessage
+			model.DB.Find(&cm, "msg_id = ? AND device_jid = ?", evt.Info.ID, client.GetDeviceJID())
+			if cm.ID == 0 {
+				model.DB.Save(&model.WhatsappChatMessage{
+					MsgID:     evt.Info.ID,
+					ChatJID:   evt.Info.Chat.String(),
+					SenderJID: evt.Info.Sender.String(),
+					Msg: &model.Msg{
+						Message: evt.Message,
+					},
+					FromMe:    evt.Info.IsFromMe,
+					SendTime:  evt.Info.Timestamp,
+					DeviceJID: client.GetDeviceJID(),
+				})
+			}
+		case *events.HistorySync:
+			if *evt.Data.SyncType == proto.HistorySync_INITIAL_BOOTSTRAP || *evt.Data.SyncType == proto.HistorySync_RECENT {
+				for _, c := range evt.Data.Conversations {
+					var chat model.WhatsappChat
+					model.DB.Find(&chat, "jid = ? AND device_jid = ?", c.Id, client.GetDeviceJID())
+					if chat.ID > 0 {
+						model.DB.Model(chat).Updates(&model.WhatsappChat{
+							JID:          c.GetId(),
+							Name:         c.GetName(),
+							LastSendTime: time.Unix(int64(*c.ConversationTimestamp), 0),
+							ReadOnly:     false,
+							UnreadCount:  uint(*c.UnreadCount),
+							DeviceJID:    client.GetDeviceJID(),
+						})
+					} else {
+						model.DB.Save(&model.WhatsappChat{
+							JID:          c.GetId(),
+							Name:         c.GetName(),
+							LastSendTime: time.Unix(int64(*c.ConversationTimestamp), 0),
+							ReadOnly:     false,
+							UnreadCount:  uint(*c.UnreadCount),
+							DeviceJID:    client.GetDeviceJID(),
+						})
+					}
+					for _, m := range c.Messages {
+						if m.Message.Message == nil {
+							continue
+						}
+
+						var cm model.WhatsappChatMessage
+						model.DB.Find(&cm, "msg_id = ? AND device_jid = ?", m.Message.Key.GetId(), client.GetDeviceJID())
+						if cm.ID == 0 {
+							msg := &model.WhatsappChatMessage{
+								MsgID:     m.Message.Key.GetId(),
+								ChatJID:   m.Message.Key.GetRemoteJid(),
+								SenderJID: m.Message.GetParticipant(),
+								Msg: &model.Msg{
+									Message: m.Message.GetMessage(),
+								},
+								FromMe:    m.Message.Key.GetFromMe(),
+								SendTime:  time.Unix(int64(m.Message.GetMessageTimestamp()), 0),
+								DeviceJID: client.GetDeviceJID(),
+							}
+							if msg.FromMe {
+								msg.SenderJID = client.Store.ID.ToNonAD().String()
+							}
+							model.DB.Save(msg)
+						}
+					}
 				}
 			}
 		}

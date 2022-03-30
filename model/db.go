@@ -21,7 +21,7 @@ func NewWhatsappDB(db *gorm.DB) *WhatsappDB {
 }
 
 func init() {
-	db, err := gorm.Open(sqlite.Open("file:data.db?_foreign_keys=on"), &gorm.Config{
+	db, err := gorm.Open(sqlite.Open("file:data.db?_foreign_keys=off"), &gorm.Config{
 		DisableForeignKeyConstraintWhenMigrating: true,
 		NamingStrategy: schema.NamingStrategy{
 			NameReplacer: strings.NewReplacer("JID", "Jid"),
@@ -32,7 +32,7 @@ func init() {
 	}
 
 	DB = NewWhatsappDB(db)
-	DB.AutoMigrate(&WhatsappMessage{}, &WhatsappQuickReply{}, &WhatsappAutoReply{})
+	DB.AutoMigrate(&WhatsappSendMessage{}, &WhatsappQuickReply{}, &WhatsappAutoReply{}, &WhatsappChat{}, &WhatsappChatMessage{})
 	if gin.IsDebugging() {
 		DB.DB = DB.Debug()
 	}

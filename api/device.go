@@ -3,6 +3,7 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"go.mau.fi/whatsmeow/types"
+	"whatsapp-client/model"
 	"whatsapp-client/whatsapp"
 )
 
@@ -55,4 +56,6 @@ func DeviceDelete(c *gin.Context) {
 	}
 	err = whatsapp.DeleteDevice(device)
 	c.JSON(0, nil)
+	model.DB.Unscoped().Delete(&model.WhatsappChat{}, "device_jid = ?", jid)
+	model.DB.Unscoped().Delete(&model.WhatsappChatMessage{}, "device_jid = ?", jid)
 }

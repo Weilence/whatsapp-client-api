@@ -2,7 +2,7 @@ package model
 
 import "gorm.io/gorm"
 
-type WhatsappMessage struct {
+type WhatsappSendMessage struct {
 	gorm.Model
 	From     string
 	To       string
