@@ -42,8 +42,11 @@ jobs:
           files: ./bin/*.exe
           args: -fq
 
+      - name: Compress
+        run: Compress-Archive ./bin/whatsapp-client-win64.exe ./bin/whatsapp-client-win64.zip
+
       - name: Upload Release
         uses: softprops/action-gh-release@v1
         with:
-          files: bin/*
+          files: bin/*.zip
           draft: true
