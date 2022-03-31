@@ -53,6 +53,7 @@ func main() {
 	group.POST("/autoreply", api.AutoReplyAdd)
 	group.PUT("/autoreply", api.AutoReplyEdit)
 	group.DELETE("/autoreply", api.AutoReplyDelete)
+	group.GET("/chats", api.ChatQuery)
 
 	log.Println(g.Run(*host + ":" + *port))
 }

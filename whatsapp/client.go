@@ -17,10 +17,7 @@ type Client struct {
 	*whatsmeow.Client
 	groups    []*types.GroupInfo
 	autoReply AutoReply
-}
-
-func (c Client) GetDeviceJID() string {
-	return c.Store.ID.String()
+	DeviceJID string
 }
 
 var onlineClients []*Client
@@ -47,8 +44,12 @@ func NewClient(id string) (*Client, <-chan whatsmeow.QRChannelItem) {
 	client.EnableAutoReply()
 	client.AddEventHandler(func(rawEvt interface{}) {
 		switch evt := rawEvt.(type) {
+		case *events.Connected:
+			client.DeviceJID = client.Store.ID.String()
 		case *events.ClientOutdated:
 		case *events.LoggedOut:
+			model.DB.Unscoped().Delete(&model.WhatsappChat{}, "device_jid = ?", client.DeviceJID)
+			model.DB.Unscoped().Delete(&model.WhatsappChatMessage{}, "device_jid = ?", client.DeviceJID)
 			for i, c := range onlineClients {
 				if c.Store.ID == client.Store.ID {
 					onlineClients = append(onlineClients[:i], onlineClients[i+1:]...)
@@ -57,7 +58,7 @@ func NewClient(id string) (*Client, <-chan whatsmeow.QRChannelItem) {
 			}
 		case *events.Message:
 			var cm model.WhatsappChatMessage
-			model.DB.Find(&cm, "msg_id = ? AND device_jid = ?", evt.Info.ID, client.GetDeviceJID())
+			model.DB.Find(&cm, "msg_id = ? AND device_jid = ?", evt.Info.ID, client.DeviceJID)
 			if cm.ID == 0 {
 				model.DB.Save(&model.WhatsappChatMessage{
 					MsgID:     evt.Info.ID,
@@ -68,14 +69,14 @@ func NewClient(id string) (*Client, <-chan whatsmeow.QRChannelItem) {
 					},
 					FromMe:    evt.Info.IsFromMe,
 					SendTime:  evt.Info.Timestamp,
-					DeviceJID: client.GetDeviceJID(),
+					DeviceJID: client.DeviceJID,
 				})
 			}
 		case *events.HistorySync:
 			if *evt.Data.SyncType == proto.HistorySync_INITIAL_BOOTSTRAP || *evt.Data.SyncType == proto.HistorySync_RECENT {
 				for _, c := range evt.Data.Conversations {
 					var chat model.WhatsappChat
-					model.DB.Find(&chat, "jid = ? AND device_jid = ?", c.Id, client.GetDeviceJID())
+					model.DB.Find(&chat, "jid = ? AND device_jid = ?", c.Id, client.DeviceJID)
 					if chat.ID > 0 {
 						model.DB.Model(chat).Updates(&model.WhatsappChat{
 							JID:          c.GetId(),
@@ -83,7 +84,7 @@ func NewClient(id string) (*Client, <-chan whatsmeow.QRChannelItem) {
 							LastSendTime: time.Unix(int64(*c.ConversationTimestamp), 0),
 							ReadOnly:     false,
 							UnreadCount:  uint(*c.UnreadCount),
-							DeviceJID:    client.GetDeviceJID(),
+							DeviceJID:    client.DeviceJID,
 						})
 					} else {
 						model.DB.Save(&model.WhatsappChat{
@@ -92,7 +93,7 @@ func NewClient(id string) (*Client, <-chan whatsmeow.QRChannelItem) {
 							LastSendTime: time.Unix(int64(*c.ConversationTimestamp), 0),
 							ReadOnly:     false,
 							UnreadCount:  uint(*c.UnreadCount),
-							DeviceJID:    client.GetDeviceJID(),
+							DeviceJID:    client.DeviceJID,
 						})
 					}
 					for _, m := range c.Messages {
@@ -101,7 +102,7 @@ func NewClient(id string) (*Client, <-chan whatsmeow.QRChannelItem) {
 						}
 
 						var cm model.WhatsappChatMessage
-						model.DB.Find(&cm, "msg_id = ? AND device_jid = ?", m.Message.Key.GetId(), client.GetDeviceJID())
+						model.DB.Find(&cm, "msg_id = ? AND device_jid = ?", m.Message.Key.GetId(), client.DeviceJID)
 						if cm.ID == 0 {
 							msg := &model.WhatsappChatMessage{
 								MsgID:     m.Message.Key.GetId(),
@@ -112,7 +113,7 @@ func NewClient(id string) (*Client, <-chan whatsmeow.QRChannelItem) {
 								},
 								FromMe:    m.Message.Key.GetFromMe(),
 								SendTime:  time.Unix(int64(m.Message.GetMessageTimestamp()), 0),
-								DeviceJID: client.GetDeviceJID(),
+								DeviceJID: client.DeviceJID,
 							}
 							if msg.FromMe {
 								msg.SenderJID = client.Store.ID.ToNonAD().String()
