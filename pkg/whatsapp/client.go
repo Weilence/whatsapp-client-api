@@ -10,7 +10,7 @@ import (
 	"go.mau.fi/whatsmeow/types/events"
 	log "go.mau.fi/whatsmeow/util/log"
 	"time"
-	"whatsapp-client/model"
+	"whatsapp-client/internal/model"
 )
 
 type Client struct {

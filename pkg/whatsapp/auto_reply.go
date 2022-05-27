@@ -4,7 +4,7 @@ import (
 	"go.mau.fi/whatsmeow/types/events"
 	"io/ioutil"
 	"strings"
-	"whatsapp-client/model"
+	"whatsapp-client/internal/model"
 )
 
 type AutoReply struct {

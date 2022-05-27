@@ -4,8 +4,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 	"strconv"
-	"whatsapp-client/model"
-	"whatsapp-client/whatsapp"
+	"whatsapp-client/internal/model"
+	"whatsapp-client/pkg/whatsapp"
 )
 
 type AutoReplyQueryReq struct {

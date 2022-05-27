@@ -4,7 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"sort"
 	"strings"
-	"whatsapp-client/whatsapp"
+	"whatsapp-client/pkg/whatsapp"
 )
 
 type Contact struct {

@@ -2,17 +2,27 @@ package api
 
 import (
 	"github.com/denisbrodbeck/machineid"
-	"github.com/gin-contrib/sse"
 	"github.com/gin-gonic/gin"
 	"go.mau.fi/whatsmeow"
 	"io"
 	"log"
 	"strings"
-	"whatsapp-client/whatsapp"
+	"whatsapp-client/pkg/whatsapp"
 )
 
 var version = ""
 
+// ClientLogin PingExample godoc
+// @Summary ping example
+// @Schemes
+// @Description do ping
+// @Tags example
+// @Param username path string true "username"
+// @Param passwd path string true "passwd"
+// @Accept json
+// @Produce json
+// @Success 200 {string} Helloworld
+// @Router /example/helloworld [get]
 func ClientLogin(c *gin.Context) {
 	c.Header("Content-Type", "text/event-stream")
 	c.Header("Cache-Control", "no-cache")
@@ -24,11 +34,7 @@ func ClientLogin(c *gin.Context) {
 
 	if qrItemChan == nil {
 		client.Login()
-
-		sse.Encode(c.Writer, sse.Event{
-			Event: "success",
-			Data:  client.Client.Store.ID.String(),
-		})
+		c.SSEvent("success", client.Store.ID.String())
 		return
 	}
 	c.Stream(func(w io.Writer) bool {
@@ -37,29 +43,17 @@ func ClientLogin(c *gin.Context) {
 			return false
 		case evt := <-qrItemChan:
 			if evt.Event == "code" {
-				sse.Encode(w, sse.Event{
-					Event: "message",
-					Data:  evt.Code,
-				})
+				c.SSEvent("message", evt.Code)
 				return true
 			} else if evt == whatsmeow.QRChannelSuccess {
 				client.Login()
-				sse.Encode(c.Writer, sse.Event{
-					Event: "success",
-					Data:  client.Client.Store.ID.String(),
-				})
+				c.SSEvent("success", client.Store.ID.String())
 				return false
 			} else if evt == whatsmeow.QRChannelScannedWithoutMultidevice {
-				sse.Encode(c.Writer, sse.Event{
-					Event: "error",
-					Data:  "请开启多设备测试版",
-				})
+				c.SSEvent("error", "请开启多设备测试版")
 				return false
 			} else {
-				sse.Encode(c.Writer, sse.Event{
-					Event: "error",
-					Data:  "扫码登录失败",
-				})
+				c.SSEvent("error", "扫码登录失败")
 				return false
 			}
 		}

@@ -1,4 +1,4 @@
-package main
+package middleware
 
 import (
 	"encoding/json"
@@ -48,7 +48,7 @@ func (r *responseWriter) Write(b []byte) (n int, err error) {
 	return r.ResponseWriter.Write(b)
 }
 
-func ResponseMiddleware() func(c *gin.Context) {
+func NewResponse() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Writer = &responseWriter{
 			ResponseWriter: c.Writer,

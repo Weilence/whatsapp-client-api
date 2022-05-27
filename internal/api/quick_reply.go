@@ -5,7 +5,7 @@ import (
 	"gorm.io/gorm"
 	"log"
 	"strconv"
-	"whatsapp-client/model"
+	"whatsapp-client/internal/model"
 )
 
 type (

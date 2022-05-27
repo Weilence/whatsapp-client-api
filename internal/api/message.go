@@ -5,8 +5,9 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"time"
-	"whatsapp-client/model"
-	"whatsapp-client/whatsapp"
+	"whatsapp-client/internal/model"
+	"whatsapp-client/pkg/utils"
+	"whatsapp-client/pkg/whatsapp"
 )
 
 type (
@@ -34,7 +35,9 @@ type SendReq struct {
 
 func MessageSend(c *gin.Context) {
 	var req SendReq
-	c.Bind(&req)
+	if err := c.Bind(&req); err != nil {
+		return
+	}
 
 	jid := whatsapp.NewUserJID(req.Phone)
 	client := whatsapp.GetClient(req.JID)
@@ -69,7 +72,9 @@ func MessageSend(c *gin.Context) {
 
 func MessageQuery(c *gin.Context) {
 	var req MessagesReq
-	c.Bind(&req)
+	if err := c.Bind(&req); err != nil {
+		return
+	}
 
 	var list []MessagesRes
 
@@ -89,7 +94,7 @@ func MessageQuery(c *gin.Context) {
 
 func FormFileData(f multipart.FileHeader) []byte {
 	file, err := f.Open()
-	defer file.Close()
+	defer utils.Close(file)
 	if err != nil {
 		panic(err)
 	}

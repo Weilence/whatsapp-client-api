@@ -4,7 +4,7 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"go.mau.fi/whatsmeow/types"
-	"whatsapp-client/whatsapp"
+	"whatsapp-client/pkg/whatsapp"
 )
 
 type Group struct {

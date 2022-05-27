@@ -3,7 +3,7 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"time"
-	"whatsapp-client/model"
+	"whatsapp-client/internal/model"
 )
 
 type (
