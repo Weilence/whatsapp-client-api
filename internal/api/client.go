@@ -12,17 +12,6 @@ import (
 
 var version = ""
 
-// ClientLogin PingExample godoc
-// @Summary ping example
-// @Schemes
-// @Description do ping
-// @Tags example
-// @Param username path string true "username"
-// @Param passwd path string true "passwd"
-// @Accept json
-// @Produce json
-// @Success 200 {string} Helloworld
-// @Router /example/helloworld [get]
 func ClientLogin(c *gin.Context) {
 	c.Header("Content-Type", "text/event-stream")
 	c.Header("Cache-Control", "no-cache")
@@ -30,10 +19,10 @@ func ClientLogin(c *gin.Context) {
 
 	id := c.Query("jid")
 
-	client, qrItemChan := whatsapp.NewClient(id)
+	client := whatsapp.NewClient(id)
+	qrItemChan := client.Login()
 
 	if qrItemChan == nil {
-		client.Login()
 		c.SSEvent("success", client.Store.ID.String())
 		return
 	}
@@ -46,7 +35,6 @@ func ClientLogin(c *gin.Context) {
 				c.SSEvent("message", evt.Code)
 				return true
 			} else if evt == whatsmeow.QRChannelSuccess {
-				client.Login()
 				c.SSEvent("success", client.Store.ID.String())
 				return false
 			} else if evt == whatsmeow.QRChannelScannedWithoutMultidevice {
@@ -61,8 +49,8 @@ func ClientLogin(c *gin.Context) {
 }
 
 func ClientLogout(c *gin.Context) {
-	client := whatsapp.GetClient(c.Query("jid"))
-	client.Logout()
+	client, _ := whatsapp.GetClient(c.Query("jid"))
+	_ = client.Logout()
 	c.JSON(0, nil)
 }
 

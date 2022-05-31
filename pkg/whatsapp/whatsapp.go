@@ -15,7 +15,6 @@ func init() {
 	name := "Windows"
 	store.DeviceProps.Os = &name
 	store.DeviceProps.PlatformType = waProto.CompanionProps_CHROME.Enum()
-
 }
 
 func Init(db *sql.DB) {
@@ -24,15 +23,4 @@ func Init(db *sql.DB) {
 	container = sqlstore.NewWithDB(db, "sqlite3", dbLog)
 	err := container.Upgrade()
 	utils.NoError(err)
-
-	go func() {
-		devices, err := container.GetAllDevices()
-		if err != nil || len(devices) == 0 {
-			return
-		}
-		client, qrChan := NewClient(devices[0].ID.String())
-		if qrChan == nil {
-			client.Login()
-		}
-	}()
 }

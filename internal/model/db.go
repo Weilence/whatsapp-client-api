@@ -7,11 +7,10 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 	"strings"
-	"whatsapp-client/pkg/orm"
 	"whatsapp-client/pkg/utils"
 )
 
-var DB *orm.DB
+var DB *gorm.DB
 
 func Init() {
 	db, err := gorm.Open(sqlite.Open("file:data.db?_foreign_keys=off"), &gorm.Config{
@@ -28,9 +27,7 @@ func Init() {
 	err = AutoMigrate(db)
 	utils.NoError(err)
 
-	DB = &orm.DB{
-		DB: db,
-	}
+	DB = db
 }
 
 func AutoMigrate(db *gorm.DB) error {
@@ -39,7 +36,7 @@ func AutoMigrate(db *gorm.DB) error {
 }
 
 func SqlDB() *sql.DB {
-	db, err := DB.DB.DB()
+	db, err := DB.DB()
 	utils.NoError(err)
 	return db
 }

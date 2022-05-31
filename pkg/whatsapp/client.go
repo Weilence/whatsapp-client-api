@@ -2,15 +2,17 @@ package whatsapp
 
 import (
 	"context"
+	"errors"
 	"github.com/mattn/go-ieproxy"
+	"github.com/spf13/cast"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/binary/proto"
-	"go.mau.fi/whatsmeow/store"
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
-	log "go.mau.fi/whatsmeow/util/log"
-	"time"
+	waLog "go.mau.fi/whatsmeow/util/log"
+	"go.uber.org/atomic"
 	"whatsapp-client/internal/model"
+	"whatsapp-client/pkg/utils"
 )
 
 type Client struct {
@@ -20,42 +22,36 @@ type Client struct {
 	DeviceJID string
 }
 
-var onlineClients []*Client
+var logId atomic.Uint32
 
-func NewClient(id string) (*Client, <-chan whatsmeow.QRChannelItem) {
-	var device *store.Device
-	if id == "" {
+func getClientLog() waLog.Logger {
+	return waLog.Stdout("Client"+cast.ToString(logId.Inc()), "DEBUG", true)
+}
+
+func NewClient(id string) *Client {
+	jid, err := types.ParseJID(id)
+	utils.NoError(err)
+	device, err := container.GetDevice(jid)
+	utils.NoError(err)
+	if device == nil {
 		device = container.NewDevice()
-	} else {
-		jid, err := types.ParseJID(id)
-		if err != nil {
-			panic(err)
-		}
-		device, err = container.GetDevice(jid)
-
-		if err != nil {
-			panic(err)
-		}
 	}
 
-	clientLog := log.Stdout("Client", "DEBUG", true)
-	client := &Client{Client: whatsmeow.NewClient(device, clientLog)}
-	client.SetProxy(ieproxy.GetProxyFunc())
+	client := &Client{Client: whatsmeow.NewClient(device, getClientLog())}
 	client.EnableAutoReply()
+
+	client.SetProxy(ieproxy.GetProxyFunc())
 	client.AddEventHandler(func(rawEvt interface{}) {
 		switch evt := rawEvt.(type) {
 		case *events.Connected:
 			client.DeviceJID = client.Store.ID.String()
+			onlineClientAdd(client)
+		case *events.Disconnected:
+			onlineClientRemove(client)
 		case *events.ClientOutdated:
 		case *events.LoggedOut:
-			model.DB.Unscoped().Delete(&model.WhatsappChat{}, "device_jid = ?", client.DeviceJID)
-			model.DB.Unscoped().Delete(&model.WhatsappChatMessage{}, "device_jid = ?", client.DeviceJID)
-			for i, c := range onlineClients {
-				if c.Store.ID == client.Store.ID {
-					onlineClients = append(onlineClients[:i], onlineClients[i+1:]...)
-					return
-				}
-			}
+			clearChat(client.DeviceJID)
+			onlineClientRemove(client)
 		case *events.Message:
 			var cm model.WhatsappChatMessage
 			model.DB.Find(&cm, "msg_id = ? AND device_jid = ?", evt.Info.ID, client.DeviceJID)
@@ -81,18 +77,18 @@ func NewClient(id string) (*Client, <-chan whatsmeow.QRChannelItem) {
 						model.DB.Model(chat).Updates(&model.WhatsappChat{
 							JID:          c.GetId(),
 							Name:         c.GetName(),
-							LastSendTime: time.Unix(int64(*c.ConversationTimestamp), 0),
+							LastSendTime: cast.ToTime(c.ConversationTimestamp),
 							ReadOnly:     false,
-							UnreadCount:  uint(*c.UnreadCount),
+							UnreadCount:  cast.ToUint(c.UnreadCount),
 							DeviceJID:    client.DeviceJID,
 						})
 					} else {
 						model.DB.Save(&model.WhatsappChat{
 							JID:          c.GetId(),
 							Name:         c.GetName(),
-							LastSendTime: time.Unix(int64(*c.ConversationTimestamp), 0),
+							LastSendTime: cast.ToTime(c.ConversationTimestamp),
 							ReadOnly:     false,
-							UnreadCount:  uint(*c.UnreadCount),
+							UnreadCount:  cast.ToUint(c.UnreadCount),
 							DeviceJID:    client.DeviceJID,
 						})
 					}
@@ -112,7 +108,7 @@ func NewClient(id string) (*Client, <-chan whatsmeow.QRChannelItem) {
 									Message: m.Message.GetMessage(),
 								},
 								FromMe:    m.Message.Key.GetFromMe(),
-								SendTime:  time.Unix(int64(m.Message.GetMessageTimestamp()), 0),
+								SendTime:  cast.ToTime(m.Message.GetMessageTimestamp()),
 								DeviceJID: client.DeviceJID,
 							}
 							if msg.FromMe {
@@ -126,49 +122,81 @@ func NewClient(id string) (*Client, <-chan whatsmeow.QRChannelItem) {
 		}
 	})
 
-	if client.Store.ID == nil {
-		c, _ := client.GetQRChannel(context.Background())
-		err := client.Connect()
-		if err != nil {
-			panic(err)
-		}
-		return client, c
-	} else {
-		err := client.Connect()
-		if err != nil {
-			panic(err)
-		}
-		return client, nil
-	}
+	return client
+}
+
+func clearChat(jid string) {
+	model.DB.Unscoped().Delete(&model.WhatsappChat{}, "device_jid = ?", jid)
+	model.DB.Unscoped().Delete(&model.WhatsappChatMessage{}, "device_jid = ?", jid)
 }
 
 func GetClients() []*Client {
 	return onlineClients
 }
 
-func GetClient(id string) *Client {
+func GetClient(id string) (*Client, error) {
 	for _, client := range onlineClients {
 		if client.Store.ID.String() == id {
-			return client
+			return client, nil
 		}
 	}
-	return nil
+	return nil, errors.New("客户端已离线")
 }
 
-func (c *Client) Login() {
-	onlineClients = append(onlineClients, c)
+func (c *Client) Login() <-chan whatsmeow.QRChannelItem {
+	if c.Store.ID != nil {
+		ch := make(chan bool)
+		handlerID := c.AddEventHandler(func(evt interface{}) {
+			switch evt.(type) {
+			case *events.Connected:
+				ch <- true
+			case *events.ClientOutdated:
+				ch <- false
+			}
+		})
+		utils.NoError(c.Connect())
+		if <-ch {
+			return nil
+		}
+		c.RemoveEventHandler(handlerID)
+	}
+
+	qrChan, err := c.GetQRChannel(context.Background())
+	utils.NoError(err)
+	utils.NoError(c.Connect())
+	return qrChan
 }
 
-func (c *Client) Logout() {
-	c.Disconnect()
+func (c *Client) Logout() error {
 	for i, client := range onlineClients {
-		if client.Store.ID.String() == c.Store.ID.String() {
+		if client.Store.ID.String() == client.Store.ID.String() {
 			onlineClients = append(onlineClients[:i], onlineClients[i+1:]...)
-			return
+			break
 		}
 	}
+
+	err := c.Client.Logout()
+	if err == nil {
+		clearChat(c.DeviceJID)
+	}
+	return err
 }
 
 func (c *Client) Phone() string {
 	return c.Store.ID.User
+}
+
+var onlineClients []*Client
+
+func onlineClientAdd(client *Client) {
+	onlineClients = append(onlineClients, client)
+}
+
+func onlineClientRemove(client *Client) {
+	for i, c := range onlineClients {
+		if c.Store.ID == client.Store.ID {
+			onlineClients = append(onlineClients[:i], onlineClients[i+1:]...)
+			return
+		}
+	}
 }

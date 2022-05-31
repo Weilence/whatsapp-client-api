@@ -40,7 +40,7 @@ func MessageSend(c *gin.Context) {
 	}
 
 	jid := whatsapp.NewUserJID(req.Phone)
-	client := whatsapp.GetClient(req.JID)
+	client, _ := whatsapp.GetClient(req.JID)
 
 	if req.File.Size == 0 {
 		client.SendTextMessage(jid, req.Text)
