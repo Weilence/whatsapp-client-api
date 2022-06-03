@@ -42,15 +42,16 @@ func init() {
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-func newRun(callback func(str string) (notStop bool)) func(cmd *cobra.Command, args []string) {
+func newRun(callback func(str string) (stop bool)) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
 		conn, err := npipe.Dial(NamedPipeAddress)
 		_, err = fmt.Fprintln(conn, strings.Join(os.Args[1:], " "))
 
 		utils.NoError(err)
 
+		reader := bufio.NewReader(conn)
 		for {
-			str, err := bufio.NewReader(conn).ReadString('\n')
+			str, err := reader.ReadString('\n')
 			if err != nil {
 				if !errors.Is(err, io.EOF) {
 					fmt.Println(err)
@@ -63,7 +64,7 @@ func newRun(callback func(str string) (notStop bool)) func(cmd *cobra.Command, a
 				continue
 			}
 
-			if !callback(str) {
+			if callback(str) {
 				break
 			}
 		}

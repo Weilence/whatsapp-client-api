@@ -22,7 +22,7 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Args: cobra.ExactArgs(1),
-	Run: newRun(func(str string) (notStop bool) {
+	Run: newRun(func(str string) (stop bool) {
 		result, msg, _ := strings.Cut(str, ",")
 
 		if result == "code" {
@@ -31,10 +31,9 @@ to quickly create a Cobra application.`,
 			fmt.Println(code.ToSmallString(false))
 		} else {
 			fmt.Println(msg)
-			return
+			return true
 		}
-
-		return true
+		return
 	}),
 }
 

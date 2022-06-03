@@ -85,6 +85,12 @@ func handleConnection(ctx *Context) {
 		ctx.logout()
 	case "send":
 		ctx.send()
+	case "groups":
+		ctx.groups()
+	case "join":
+		ctx.join()
+	case "leave":
+		ctx.leave()
 	default:
 		log.Println("未执行命令")
 	}
