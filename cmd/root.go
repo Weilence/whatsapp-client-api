@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	flag "github.com/spf13/pflag"
 	"gopkg.in/natefinch/npipe.v2"
 	"io"
 	"os"
@@ -46,14 +45,7 @@ func init() {
 func newRun(callback func(str string) (notStop bool)) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
 		conn, err := npipe.Dial(NamedPipeAddress)
-
-		writeArgs := []string{cmd.Name()}
-		writeArgs = append(writeArgs, cmd.Flags().Args()...)
-		cmd.Flags().Visit(func(flag *flag.Flag) {
-			writeArgs = append(writeArgs, "--"+flag.Name+" "+flag.Value.String())
-		})
-
-		_, err = fmt.Fprintln(conn, strings.Join(writeArgs, " "))
+		_, err = fmt.Fprintln(conn, strings.Join(os.Args[1:], " "))
 
 		utils.NoError(err)
 

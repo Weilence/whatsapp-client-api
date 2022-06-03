@@ -47,7 +47,7 @@ func DeviceQuery(c *gin.Context) {
 func DeviceDelete(c *gin.Context) {
 	jid, err := types.ParseJID(c.Query("jid"))
 	utils.NoError(err)
-	device, err := whatsapp.GetDevice(jid)
+	device, err := whatsapp.GetDevice(jid.String())
 	utils.NoError(err)
 	err = whatsapp.DeleteDevice(device)
 	utils.NoError(err)

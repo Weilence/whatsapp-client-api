@@ -2,15 +2,20 @@ package whatsapp
 
 import (
 	"go.mau.fi/whatsmeow/store"
-	"go.mau.fi/whatsmeow/types"
 )
 
 func GetDevices() ([]*store.Device, error) {
 	return container.GetAllDevices()
 }
 
-func GetDevice(jid types.JID) (*store.Device, error) {
-	return container.GetDevice(jid)
+func GetDevice(phone string) (device *store.Device, err error) {
+	devices, err := GetDevices()
+	for _, device := range devices {
+		if device.ID.User == phone {
+			return device, nil
+		}
+	}
+	return nil, err
 }
 
 func DeleteDevice(device *store.Device) error {

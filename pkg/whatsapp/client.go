@@ -31,7 +31,7 @@ func getClientLog() waLog.Logger {
 func NewClient(id string) *Client {
 	jid, err := types.ParseJID(id)
 	utils.NoError(err)
-	device, err := container.GetDevice(jid)
+	device, err := GetDevice(jid.String())
 	utils.NoError(err)
 	if device == nil {
 		device = container.NewDevice()
@@ -134,9 +134,9 @@ func GetClients() []*Client {
 	return onlineClients
 }
 
-func GetClient(id string) (*Client, error) {
+func GetClient(phone string) (*Client, error) {
 	for _, client := range onlineClients {
-		if client.Store.ID.String() == id {
+		if client.Store.ID.User == phone {
 			return client, nil
 		}
 	}

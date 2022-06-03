@@ -32,7 +32,7 @@ func (ctx *Context) send() (err error) {
 	if err != nil {
 		return
 	}
-	to, err := flagSet.GetString("to")
+	to, err := flagSet.GetStringSlice("to")
 	if err != nil {
 		return
 	}
@@ -56,43 +56,47 @@ func (ctx *Context) send() (err error) {
 	if err != nil {
 		return
 	}
-	switch msgType {
-	case "text":
-		if err != nil {
+	for _, phone := range to {
+		switch msgType {
+		case "text":
+			err = client.SendTextMessage(phone, text)
+			if err != nil {
+				ctx.Write(err)
+				continue
+			}
+		case "image":
+			bytes, err := os.ReadFile(image)
+			if err != nil {
+				ctx.Write(err)
+				continue
+			}
+
+			caption := text
+			if caption == "" {
+				caption = filepath.Base(image)
+			}
+			err = client.SendImageMessage(phone, bytes, caption)
+			if err != nil {
+				ctx.Write(err)
+				continue
+			}
+		case "file":
+			bytes, err := os.ReadFile(file)
+			if err != nil {
+				ctx.Write(err)
+				continue
+			}
+
+			caption := filepath.Base(file)
+			err = client.SendDocumentMessage(phone, bytes, caption)
+			if err != nil {
+				ctx.Write(err)
+				continue
+			}
+		default:
+			ctx.Write("type类型错误")
 			return
 		}
-		err = client.SendTextMessage(to, text)
-		if err != nil {
-			return
-		}
-	case "image":
-		bytes, err := os.ReadFile(image)
-		if err != nil {
-			return err
-		}
-
-		caption := text
-		if caption == "" {
-			caption = filepath.Base(image)
-		}
-		err = client.SendImageMessage(to, bytes, caption)
-		if err != nil {
-			return err
-		}
-	case "file":
-		bytes, err := os.ReadFile(file)
-		if err != nil {
-			return err
-		}
-
-		caption := filepath.Base(file)
-		err = client.SendDocumentMessage(to, bytes, caption)
-		if err != nil {
-			return err
-		}
-	default:
-		ctx.Write("type类型错误")
-		return
 	}
 	ctx.Write("消息发送成功")
 	return
@@ -100,7 +104,7 @@ func (ctx *Context) send() (err error) {
 
 func defineFlags(flagSet *flag.FlagSet) {
 	flagSet.String("from", "", "发送人")
-	flagSet.String("to", "", "接收人")
+	flagSet.StringSlice("to", []string{}, "接收人")
 	flagSet.String("type", "", "消息类型，text、image、file中的一个")
 	flagSet.String("text", "", "文本消息内容")
 	flagSet.String("image", "", "图片路径")
