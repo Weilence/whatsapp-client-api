@@ -7,7 +7,10 @@ import (
 	"gopkg.in/natefinch/npipe.v2"
 	"log"
 	"net"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"whatsapp-client/config"
 	"whatsapp-client/internal/model"
 	"whatsapp-client/pkg/utils"
@@ -18,7 +21,7 @@ var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "启动Whatsapp服务",
 	Args:  cobra.NoArgs,
-	RunE: func(cmd *cobra.Command, _ []string) (err error) {
+	Run: func(cmd *cobra.Command, _ []string) {
 		config.Init()
 		model.Init()
 		whatsapp.Init(model.SqlDB())
@@ -29,20 +32,30 @@ var startCmd = &cobra.Command{
 		}
 		ctx := &Context{ln: ln}
 
-		for {
-			conn, err := ln.Accept()
-			if err != nil {
-				return err
-			}
-			ctx.conn = conn
+		go func() {
+			for {
+				conn, err := ln.Accept()
+				if err != nil {
+					return
+				}
+				ctx.conn = conn
 
-			str, err := bufio.NewReader(conn).ReadString('\n')
-			if err != nil {
-				return err
-			}
+				str, err := bufio.NewReader(conn).ReadString('\n')
+				if err != nil {
+					return
+				}
 
-			ctx.args = strings.Fields(str)
-			go handleConnection(ctx)
+				ctx.args = strings.Fields(str)
+				go handleConnection(ctx)
+			}
+		}()
+
+		c := make(chan os.Signal)
+		signal.Notify(c, syscall.SIGTERM, syscall.SIGINT)
+		<-c
+		err = ln.Close()
+		if err != nil {
+			log.Println(err)
 		}
 	},
 }

@@ -12,23 +12,19 @@ import (
 var sendCmd = &cobra.Command{
 	Use:   "send",
 	Short: "发送Whatsapp消息",
-	Args:  cobra.NoArgs,
+	Args:  cobra.ExactArgs(1),
 	Run:   newRun(nil),
 }
 
-func (ctx *Context) send() (err error) {
+func (ctx *Context) send() {
 	flagSet := flag.NewFlagSet("send", flag.ExitOnError)
 	defineFlags(flagSet)
-	err = flagSet.Parse(ctx.args)
+	err := flagSet.Parse(ctx.args)
 	defer func() {
 		if err != nil {
 			ctx.Write(err)
 		}
 	}()
-	if err != nil {
-		return
-	}
-	from, err := flagSet.GetString("from")
 	if err != nil {
 		return
 	}
@@ -52,6 +48,7 @@ func (ctx *Context) send() (err error) {
 	if err != nil {
 		return
 	}
+	from := flagSet.Arg(1)
 	client, err := whatsapp.GetClient(from)
 	if err != nil {
 		return
@@ -103,7 +100,6 @@ func (ctx *Context) send() (err error) {
 }
 
 func defineFlags(flagSet *flag.FlagSet) {
-	flagSet.String("from", "", "发送人")
 	flagSet.StringSlice("to", []string{}, "接收人")
 	flagSet.String("type", "", "消息类型，text、image、file中的一个")
 	flagSet.String("text", "", "文本消息内容")
