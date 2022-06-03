@@ -9,7 +9,7 @@ import (
 )
 
 type AutoReplyQueryReq struct {
-	Pagination
+	model.Pagination
 }
 
 type AutoReplyQueryRes struct {
@@ -30,8 +30,7 @@ func AutoReplyQuery(c *gin.Context) {
 
 	model.DB.
 		Model(&model.WhatsappAutoReply{}).
-		Limit(req.Limit()).
-		Offset(req.Offset()).
+		Scopes(model.Paginate(req.Pagination)).
 		Find(&list).
 		Count(&total)
 
@@ -59,7 +58,8 @@ func AutoReplyAdd(c *gin.Context) {
 		File: req.File,
 	})
 
-	whatsapp.GetClient(req.JID).RefreshAutoReplay()
+	client, _ := whatsapp.GetClient(req.JID)
+	client.RefreshAutoReplay()
 	c.JSON(0, nil)
 }
 
@@ -83,7 +83,8 @@ func AutoReplyEdit(c *gin.Context) {
 		File:  req.File,
 	})
 
-	whatsapp.GetClient(req.JID).RefreshAutoReplay()
+	client, _ := whatsapp.GetClient(req.JID)
+	client.RefreshAutoReplay()
 	c.JSON(0, nil)
 }
 
@@ -95,6 +96,7 @@ func AutoReplyDelete(c *gin.Context) {
 	model.DB.Unscoped().Delete(&model.WhatsappAutoReply{}, id)
 
 	jid := c.Query("jid")
-	whatsapp.GetClient(jid).RefreshAutoReplay()
+	client, _ := whatsapp.GetClient(jid)
+	client.RefreshAutoReplay()
 	c.JSON(0, nil)
 }

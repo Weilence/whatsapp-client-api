@@ -28,11 +28,8 @@ func getClientLog() waLog.Logger {
 	return waLog.Stdout("Client"+cast.ToString(logId.Inc()), "DEBUG", true)
 }
 
-func NewClient(id string) *Client {
-	jid, err := types.ParseJID(id)
-	utils.NoError(err)
-	device, err := GetDevice(jid.String())
-	utils.NoError(err)
+func NewClient(phone string) *Client {
+	device, _ := GetDevice(phone)
 	if device == nil {
 		device = container.NewDevice()
 	}
@@ -140,7 +137,7 @@ func GetClient(phone string) (*Client, error) {
 			return client, nil
 		}
 	}
-	return nil, errors.New("客户端已离线")
+	return nil, errors.New("客户端未登录")
 }
 
 func (c *Client) Login() <-chan whatsmeow.QRChannelItem {
@@ -169,17 +166,18 @@ func (c *Client) Login() <-chan whatsmeow.QRChannelItem {
 
 func (c *Client) Logout() error {
 	for i, client := range onlineClients {
-		if client.Store.ID.String() == client.Store.ID.String() {
+		if c.Store.ID.String() == client.Store.ID.String() {
 			onlineClients = append(onlineClients[:i], onlineClients[i+1:]...)
 			break
 		}
 	}
 
 	err := c.Client.Logout()
-	if err == nil {
-		clearChat(c.DeviceJID)
+	if err != nil {
+		return err
 	}
-	return err
+	clearChat(c.DeviceJID)
+	return nil
 }
 
 func (c *Client) Phone() string {

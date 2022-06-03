@@ -2,7 +2,6 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
-	"go.mau.fi/whatsmeow/types"
 	"whatsapp-client/internal/model"
 	"whatsapp-client/pkg/utils"
 	"whatsapp-client/pkg/whatsapp"
@@ -45,14 +44,21 @@ func DeviceQuery(c *gin.Context) {
 }
 
 func DeviceDelete(c *gin.Context) {
-	jid, err := types.ParseJID(c.Query("jid"))
-	utils.NoError(err)
-	device, err := whatsapp.GetDevice(jid.String())
-	utils.NoError(err)
-	err = whatsapp.DeleteDevice(device)
-	utils.NoError(err)
+	phone := c.Query("phone")
+	device, err := whatsapp.GetDevice(phone)
+	if err != nil {
+		BadRequest(c, err)
+		return
+	}
 
-	model.DB.Unscoped().Delete(&model.WhatsappChat{}, "device_jid = ?", jid)
-	model.DB.Unscoped().Delete(&model.WhatsappChatMessage{}, "device_jid = ?", jid)
-	c.JSON(0, nil)
+	err = whatsapp.DeleteDevice(device)
+	if err != nil {
+		BadRequest(c, err)
+		return
+	}
+
+	jid := whatsapp.NewUserJID(phone)
+	model.DB.Delete(&model.WhatsappChat{}, "device_jid = ?", jid)
+	model.DB.Delete(&model.WhatsappChatMessage{}, "device_jid = ?", jid)
+	Ok(c, nil)
 }

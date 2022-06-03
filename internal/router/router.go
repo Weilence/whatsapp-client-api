@@ -15,7 +15,7 @@ func Setup() *gin.Engine {
 
 	g.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
-	group := g.Group("/api", cors.Default(), middleware.NewRecovery(), middleware.NewResponse())
+	group := g.Group("/api", cors.Default(), middleware.NewRecovery())
 	{
 		group.POST("/upload", api.UploadAdd)
 		group.GET("/upload", api.UploadGet)

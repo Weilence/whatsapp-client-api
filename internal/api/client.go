@@ -17,9 +17,9 @@ func ClientLogin(c *gin.Context) {
 	c.Header("Cache-Control", "no-cache")
 	c.Header("Connection", "keep-alive")
 
-	id := c.Query("jid")
+	phone := c.Query("phone")
+	client := whatsapp.NewClient(phone)
 
-	client := whatsapp.NewClient(id)
 	qrItemChan := client.Login()
 
 	if qrItemChan == nil {
@@ -49,9 +49,19 @@ func ClientLogin(c *gin.Context) {
 }
 
 func ClientLogout(c *gin.Context) {
-	client, _ := whatsapp.GetClient(c.Query("jid"))
-	_ = client.Logout()
-	c.JSON(0, nil)
+	phone := c.Query("phone")
+	client, err := whatsapp.GetClient(phone)
+	if err != nil {
+		BadRequest(c, err)
+		return
+	}
+
+	err = client.Logout()
+	if err != nil {
+		BadRequest(c, err)
+		return
+	}
+	Ok(c, nil)
 }
 
 func ClientInfo(c *gin.Context) {

@@ -15,7 +15,8 @@ type Contact struct {
 }
 
 func ContactQuery(c *gin.Context) {
-	contacts, err := whatsapp.GetClient(c.Query("jid")).Store.Contacts.GetAllContacts()
+	client, err := whatsapp.GetClient(c.Query("jid"))
+	contacts, err := client.Store.Contacts.GetAllContacts()
 
 	if err != nil {
 		panic(err)
@@ -63,7 +64,8 @@ func ContactVerify(c *gin.Context) {
 			data.Phones[i] = "+" + data.Phones[i]
 		}
 	}
-	res, err := whatsapp.GetClient(data.JID).IsOnWhatsApp(data.Phones)
+	client, err := whatsapp.GetClient(data.JID)
+	res, err := client.IsOnWhatsApp(data.Phones)
 	if err != nil {
 		panic(err)
 	}

@@ -10,7 +10,7 @@ import (
 
 type (
 	QueryQuickReplyReq struct {
-		Pagination
+		model.Pagination
 		Text  string `form:"text,omitempty"`
 		Group string `form:"group,omitempty"`
 	}
@@ -31,11 +31,12 @@ func QuickReplyQuery(c *gin.Context) {
 	var list []QueryQuickReplyRes
 	var total int64
 	model.DB.Model(&model.WhatsappQuickReply{}).
-		WhereIf(len(req.Text) > 0, "`text` like ?", "%"+req.Text+"%").
-		WhereIf(len(req.Group) > 0, "`group` like ?", "%"+req.Group+"%").
+		Scopes(
+			model.Paginate(req.Pagination),
+			model.WhereIf(len(req.Text) > 0, "`text` like ?", "%"+req.Text+"%"),
+			model.WhereIf(len(req.Group) > 0, "`group` like ?", "%"+req.Group+"%"),
+		).
 		Count(&total).
-		Limit(req.Limit()).
-		Offset(req.Offset()).
 		Find(&list)
 
 	c.JSON(0, gin.H{

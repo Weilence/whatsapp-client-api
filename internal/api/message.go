@@ -12,7 +12,7 @@ import (
 
 type (
 	MessagesReq struct {
-		Pagination
+		model.Pagination
 	}
 	MessagesRes struct {
 		ID        uint      `json:"id,omitempty"`
@@ -79,10 +79,9 @@ func MessageQuery(c *gin.Context) {
 
 	var total int64
 	model.DB.Model(&model.WhatsappSendMessage{}).
+		Scopes(model.Paginate(req.Pagination)).
 		Count(&total).
 		Order("id desc").
-		Limit(req.Limit()).
-		Offset(req.Offset()).
 		Find(&list)
 
 	c.JSON(0, gin.H{

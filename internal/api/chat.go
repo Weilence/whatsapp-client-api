@@ -8,7 +8,7 @@ import (
 
 type (
 	ChatQueryReq struct {
-		Pagination
+		model.Pagination
 		JID string `form:"jid"`
 	}
 	ChatQueryRes struct {
@@ -32,8 +32,7 @@ func ChatQuery(c *gin.Context) {
 	model.DB.Model(&model.WhatsappChat{}).
 		Where("device_jid = ?", req.JID).
 		Count(&total).
-		Limit(req.Limit()).
-		Offset(req.Offset()).
+		Scopes(model.Paginate(req.Pagination)).
 		Find(&list)
 
 	c.JSON(0, gin.H{

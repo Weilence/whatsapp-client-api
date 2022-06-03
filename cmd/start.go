@@ -2,17 +2,21 @@ package cmd
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"gopkg.in/natefinch/npipe.v2"
 	"log"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
 	"whatsapp-client/config"
 	"whatsapp-client/internal/model"
+	"whatsapp-client/internal/router"
 	"whatsapp-client/pkg/utils"
 	"whatsapp-client/pkg/whatsapp"
 )
@@ -32,6 +36,12 @@ var startCmd = &cobra.Command{
 		}
 		ctx := &Context{ln: ln}
 
+		handler := router.Setup()
+		server := http.Server{
+			Addr:    viper.GetString("web.host") + ":" + viper.GetString("web.port"),
+			Handler: handler,
+		}
+
 		go func() {
 			for {
 				conn, err := ln.Accept()
@@ -50,9 +60,19 @@ var startCmd = &cobra.Command{
 			}
 		}()
 
+		go func() {
+			if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				log.Fatalf("server listen err:%s", err)
+			}
+		}()
+
 		c := make(chan os.Signal)
 		signal.Notify(c, syscall.SIGTERM, syscall.SIGINT)
 		<-c
+		err = server.Shutdown(context.Background())
+		if err != nil {
+			log.Println(err)
+		}
 		err = ln.Close()
 		if err != nil {
 			log.Println(err)
