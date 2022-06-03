@@ -39,15 +39,14 @@ func MessageSend(c *gin.Context) {
 		return
 	}
 
-	jid := whatsapp.NewUserJID(req.Phone)
 	client, _ := whatsapp.GetClient(req.JID)
 
 	if req.File.Size == 0 {
-		client.SendTextMessage(jid, req.Text)
+		client.SendTextMessage(req.Phone, req.Text)
 
 		model.DB.Save(&model.WhatsappSendMessage{
 			From: req.JID,
-			To:   jid.String(),
+			To:   req.Phone,
 			Type: req.Type,
 			Text: req.Text,
 		})
@@ -55,13 +54,13 @@ func MessageSend(c *gin.Context) {
 		bytes := FormFileData(req.File)
 
 		if req.Type == 1 {
-			client.SendImageMessage(jid, bytes, req.Text)
+			client.SendImageMessage(req.Phone, bytes, req.Text)
 		} else if req.Type == 2 {
-			client.SendDocumentMessage(jid, bytes, req.Text)
+			client.SendDocumentMessage(req.Phone, bytes, req.Text)
 		}
 		model.DB.Save(&model.WhatsappSendMessage{
 			From:     req.JID,
-			To:       jid.String(),
+			To:       req.Phone,
 			Type:     req.Type,
 			Text:     req.Text,
 			FileName: req.File.Filename,

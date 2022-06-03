@@ -1,28 +1,23 @@
-/*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
-*/
 package cmd
 
 import (
+	"bufio"
+	"errors"
+	"fmt"
+	flag "github.com/spf13/pflag"
+	"gopkg.in/natefinch/npipe.v2"
+	"io"
 	"os"
+	"strings"
+	"whatsapp-client/pkg/utils"
 
 	"github.com/spf13/cobra"
 )
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "whatsapp-client",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
+	Use:   "whatsapp-client-cli",
+	Short: "whatsapp客户端命令行",
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -34,6 +29,8 @@ func Execute() {
 	}
 }
 
+var NamedPipeAddress = `\\.\pipe\whatsapp-client`
+
 func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
@@ -44,4 +41,39 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}
+
+func newRun(callback func(str string) (notStop bool)) func(cmd *cobra.Command, args []string) {
+	return func(cmd *cobra.Command, args []string) {
+		conn, err := npipe.Dial(NamedPipeAddress)
+
+		writeArgs := []string{cmd.Name()}
+		writeArgs = append(writeArgs, cmd.Flags().Args()...)
+		cmd.Flags().Visit(func(flag *flag.Flag) {
+			writeArgs = append(writeArgs, "--"+flag.Name+" "+flag.Value.String())
+		})
+
+		_, err = fmt.Fprintln(conn, strings.Join(writeArgs, " "))
+
+		utils.NoError(err)
+
+		for {
+			str, err := bufio.NewReader(conn).ReadString('\n')
+			if err != nil {
+				if !errors.Is(err, io.EOF) {
+					fmt.Println(err)
+				}
+				break
+			}
+
+			if callback == nil {
+				fmt.Println(str)
+				continue
+			}
+
+			if !callback(str) {
+				break
+			}
+		}
+	}
 }

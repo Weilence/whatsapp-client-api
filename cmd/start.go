@@ -1,7 +1,3 @@
-/*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-
-*/
 package cmd
 
 import (
@@ -9,6 +5,7 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"gopkg.in/natefinch/npipe.v2"
+	"log"
 	"net"
 	"strings"
 	"whatsapp-client/config"
@@ -17,82 +14,69 @@ import (
 	"whatsapp-client/pkg/whatsapp"
 )
 
-// startCmd represents the start command
 var startCmd = &cobra.Command{
 	Use:   "start",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
+	Short: "启动Whatsapp服务",
+	Args:  cobra.NoArgs,
+	RunE: func(cmd *cobra.Command, _ []string) (err error) {
 		config.Init()
 		model.Init()
 		whatsapp.Init(model.SqlDB())
 
-		var err error
-		ln, err = npipe.Listen(`\\.\pipe\whatsapp-client`)
+		ln, err := npipe.Listen(NamedPipeAddress)
 		if err != nil {
-			fmt.Printf("启动失败，%v \n", err)
 			return
 		}
+		ctx := &Context{ln: ln}
+
 		for {
 			conn, err := ln.Accept()
 			if err != nil {
-				break
+				return err
 			}
+			ctx.conn = conn
+
 			str, err := bufio.NewReader(conn).ReadString('\n')
-			utils.NoError(err)
+			if err != nil {
+				return err
+			}
 
-			args := strings.Fields(str)
-
-			go handleConnection(args, &Context{
-				conn: conn,
-				args: args,
-			})
+			ctx.args = strings.Fields(str)
+			go handleConnection(ctx)
 		}
 	},
 }
 
-var ln *npipe.PipeListener
-
 type Context struct {
+	ln   *npipe.PipeListener
 	conn net.Conn
 	args []string
 }
 
-func (context *Context) Write(a ...any) {
-	_, _ = fmt.Fprintln(context.conn, a...)
+func (ctx *Context) Write(a ...any) {
+	_, _ = fmt.Fprintln(ctx.conn, a...)
 }
 
-func handleConnection(args []string, context *Context) {
+func handleConnection(ctx *Context) {
 	defer func(conn net.Conn) {
 		_ = conn.Close()
-	}(context.conn)
+	}(ctx.conn)
 
-	switch args[0] {
+	switch ctx.args[0] {
 	case "stop":
-		err := ln.Close()
+		err := ctx.ln.Close()
 		utils.NoError(err)
 	case "login":
-		context.login(args)
+		ctx.login()
 	case "logout":
-		context.logout(args)
+		ctx.logout()
+	case "send":
+		ctx.send()
+	default:
+		log.Println("未执行命令")
 	}
 }
 
 func init() {
 	rootCmd.AddCommand(startCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// startCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// startCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

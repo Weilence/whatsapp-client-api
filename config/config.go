@@ -1,12 +1,12 @@
 package config
 
 import (
-	"github.com/spf13/pflag"
+	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"whatsapp-client/pkg/utils"
 )
 
-var mode = pflag.StringP("mode", "m", "dev", "run mode")
+var mode = flag.StringP("mode", "m", "dev", "run mode")
 
 func Init() {
 	viper.AddConfigPath("config")

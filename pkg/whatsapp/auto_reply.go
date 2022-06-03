@@ -37,14 +37,14 @@ func (c *Client) EnableAutoReply() {
 				reply := c.autoReply.cache[key]
 				if reply.Type == 1 {
 					if reply.File == "" {
-						c.SendTextMessage(v.Info.Chat, reply.Text)
+						c.SendTextMessage(v.Info.Chat.String(), reply.Text)
 					} else {
 						bytes, err := ioutil.ReadFile(reply.File)
 						if err != nil {
 							panic(err)
 						}
 
-						c.SendImageMessage(v.Info.Chat, bytes, reply.Text)
+						c.SendImageMessage(v.Info.Chat.String(), bytes, reply.Text)
 					}
 				} else {
 					bytes, err := ioutil.ReadFile(reply.File)
@@ -52,7 +52,7 @@ func (c *Client) EnableAutoReply() {
 						panic(err)
 					}
 
-					c.SendDocumentMessage(v.Info.Chat, bytes, reply.Text)
+					c.SendDocumentMessage(v.Info.Chat.String(), bytes, reply.Text)
 				}
 				break
 			}
