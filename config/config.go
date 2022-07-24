@@ -1,9 +1,10 @@
 package config
 
 import (
+	"log"
+
 	flag "github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"whatsapp-client/pkg/utils"
 )
 
 var mode = flag.StringP("mode", "m", "dev", "run mode")
@@ -14,9 +15,13 @@ func Init() {
 
 	viper.SetConfigName("config")
 	err := viper.ReadInConfig()
-	utils.NoError(err)
+	if err != nil {
+		log.Panic(err)
+	}
 
 	viper.SetConfigName("config." + *mode)
 	err = viper.MergeInConfig()
-	utils.PrintError(err)
+	if err != nil {
+		log.Panic(err)
+	}
 }

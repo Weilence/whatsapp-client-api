@@ -2,21 +2,14 @@ package utils
 
 import (
 	"io"
+	"log"
 )
 
 func Close(closer io.Closer) {
-	err := closer.Close()
-	NoError(err)
-}
-
-func NoError(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
-func PrintError(err error) {
-	if err != nil {
-		panic(err)
+	if closer != nil {
+		err := closer.Close()
+		if err != nil {
+			log.Print(err)
+		}
 	}
 }

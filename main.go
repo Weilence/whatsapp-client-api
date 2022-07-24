@@ -1,7 +1,9 @@
 package main
 
-import "whatsapp-client/cmd"
+import (
+	"github.com/weilence/whatsapp-client/internal/api/router"
+)
 
 func main() {
-	cmd.Execute()
+	router.RunServer()
 }
