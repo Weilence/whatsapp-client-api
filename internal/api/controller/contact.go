@@ -1,11 +1,11 @@
 package controller
 
 import (
+	"github.com/weilence/whatsapp-client/internal/api"
 	"go.mau.fi/whatsmeow/types"
 	"sort"
 	"strings"
 
-	"github.com/gin-gonic/gin"
 	"github.com/weilence/whatsapp-client/internal/pkg/whatsapp"
 )
 
@@ -20,7 +20,7 @@ type contactQueryReq struct {
 	JID *types.JID `form:"jid"`
 }
 
-func ContactQuery(c *gin.Context, req *contactQueryReq) (interface{}, error) {
+func ContactQuery(c *api.HttpContext, req *contactQueryReq) (interface{}, error) {
 	client, err := whatsapp.GetClient(req.JID)
 	if err != nil {
 		return nil, err
@@ -65,7 +65,7 @@ type (
 	}
 )
 
-func ContactVerify(c *gin.Context, req *VerifyReq) ([]*VerifyRes, error) {
+func ContactVerify(c *api.HttpContext, req *VerifyReq) ([]*VerifyRes, error) {
 	for i := range req.Phones {
 		if req.Phones[0] != "+" {
 			req.Phones[i] = "+" + req.Phones[i]

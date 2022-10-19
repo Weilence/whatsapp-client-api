@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/weilence/whatsapp-client/internal/api"
 	"go.mau.fi/whatsmeow/types"
 	"io"
 	"log"
@@ -36,7 +37,7 @@ type SendReq struct {
 	File  multipart.FileHeader `form:"file"`
 }
 
-func MessageSend(c *gin.Context, req *SendReq) (interface{}, error) {
+func MessageSend(c *api.HttpContext, req *SendReq) (interface{}, error) {
 	client, err := whatsapp.GetClient(req.JID)
 	if err != nil {
 		return nil, err
@@ -76,7 +77,7 @@ func MessageSend(c *gin.Context, req *SendReq) (interface{}, error) {
 	return nil, nil
 }
 
-func MessageQuery(c *gin.Context, req *MessagesReq) (interface{}, error) {
+func MessageQuery(c *api.HttpContext, req *MessagesReq) (interface{}, error) {
 	var list []MessagesRes
 	var total int64
 	model.DB.Model(&model.WhatsappSendMessage{}).

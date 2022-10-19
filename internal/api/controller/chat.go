@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/weilence/whatsapp-client/internal/api"
 	"time"
 
 	"github.com/weilence/whatsapp-client/internal/api/model"
@@ -22,7 +23,7 @@ type (
 	}
 )
 
-func ChatQuery(c *gin.Context, req *ChatQueryReq) (interface{}, error) {
+func ChatQuery(c *api.HttpContext, req *ChatQueryReq) (interface{}, error) {
 	var list []*ChatQueryRes
 	var total int64
 

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"github.com/weilence/whatsapp-client/internal/api"
 	"github.com/weilence/whatsapp-client/internal/api/model"
 
 	"github.com/gin-gonic/gin"
@@ -20,7 +21,7 @@ type (
 	}
 )
 
-func QuickReplyQuery(c *gin.Context, req *QueryQuickReplyReq) (interface{}, error) {
+func QuickReplyQuery(c *api.HttpContext, req *QueryQuickReplyReq) (interface{}, error) {
 	var list []QueryQuickReplyRes
 	var total int64
 	model.DB.Model(&model.WhatsappQuickReply{}).
@@ -43,7 +44,7 @@ type ReplyAddReq struct {
 	Group string `json:"group"`
 }
 
-func QuickReplyAdd(c *gin.Context, req *QueryQuickReplyReq) (*struct{}, error) {
+func QuickReplyAdd(c *api.HttpContext, req *QueryQuickReplyReq) (*struct{}, error) {
 	model.DB.Save(&model.WhatsappQuickReply{
 		Text:  req.Text,
 		Group: req.Group,
@@ -58,7 +59,7 @@ type ReplyEditReq struct {
 	Group string `json:"group"`
 }
 
-func QuickReplyEdit(c *gin.Context, req *ReplyEditReq) (interface{}, error) {
+func QuickReplyEdit(c *api.HttpContext, req *ReplyEditReq) (interface{}, error) {
 	model.DB.Save(&model.WhatsappQuickReply{
 		Model: gorm.Model{
 			ID: req.ID,
@@ -74,7 +75,7 @@ type ReplyDeleteReq struct {
 	ID uint `uri:"id"`
 }
 
-func QuickReplyDelete(c *gin.Context, req *ReplyEditReq) (interface{}, error) {
+func QuickReplyDelete(c *api.HttpContext, req *ReplyEditReq) (interface{}, error) {
 	model.DB.Unscoped().Delete(&model.WhatsappQuickReply{}, req.ID)
 	return nil, nil
 }

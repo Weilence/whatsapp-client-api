@@ -1,10 +1,9 @@
 package controller
 
 import (
+	"github.com/weilence/whatsapp-client/internal/api"
 	"log"
 	"os"
-
-	"github.com/gin-gonic/gin"
 )
 
 func init() {
@@ -14,7 +13,7 @@ func init() {
 	}
 }
 
-func UploadAdd(c *gin.Context, _ *struct{}) (interface{}, error) {
+func UploadAdd(c *api.HttpContext, _ *struct{}) (interface{}, error) {
 	f, err := c.FormFile("file")
 	if err != nil {
 		return nil, err
@@ -32,7 +31,7 @@ type uploadGetReq struct {
 	Path string `form:"path"`
 }
 
-func UploadGet(c *gin.Context, req *uploadGetReq) (interface{}, error) {
+func UploadGet(c *api.HttpContext, req *uploadGetReq) (interface{}, error) {
 	c.File("uploads/" + req.Path)
 	return nil, nil
 }

@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"github.com/gin-gonic/gin"
+	"github.com/weilence/whatsapp-client/internal/api"
 	"github.com/weilence/whatsapp-client/internal/pkg/whatsapp"
 	"go.mau.fi/whatsmeow/types"
 	"log"
@@ -15,10 +15,10 @@ type Group struct {
 }
 
 type groupQueryReq struct {
-	JID *types.JID `uri:"jid"`
+	JID *types.JID `form:"jid" binding:"required"`
 }
 
-func GroupQuery(c *gin.Context, req *groupQueryReq) (interface{}, error) {
+func GroupQuery(c *api.HttpContext, req *groupQueryReq) (interface{}, error) {
 	client, err := whatsapp.GetClient(req.JID)
 	if err != nil {
 		return nil, err
@@ -47,7 +47,7 @@ type groupGetReq struct {
 	JID *types.JID `uri:"jid"`
 }
 
-func GroupGet(c *gin.Context, req *groupGetReq) (interface{}, error) {
+func GroupGet(c *api.HttpContext, req *groupGetReq) (interface{}, error) {
 	client, err := whatsapp.GetClient(req.JID)
 	if err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ type groupJoinReq struct {
 	Path string     `json:"path"`
 }
 
-func GroupJoin(c *gin.Context, req *groupJoinReq) (interface{}, error) {
+func GroupJoin(c *api.HttpContext, req *groupJoinReq) (interface{}, error) {
 	client, err := whatsapp.GetClient(req.JID)
 	if err != nil {
 		return nil, err

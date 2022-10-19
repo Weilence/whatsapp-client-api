@@ -1,6 +1,8 @@
 package router
 
 import (
+	"github.com/gin-gonic/gin/binding"
+	"github.com/weilence/whatsapp-client/internal/api"
 	"log"
 	"net/http"
 
@@ -14,18 +16,26 @@ import (
 	"github.com/spf13/viper"
 )
 
+var validator binding.StructValidator
+
 func init() {
 	config.Init()
 	model.Init()
 	whatsapp.Init(model.SqlDB())
+
+	validator = binding.Validator
+	binding.Validator = nil
 }
 
 func initRouter() *gin.Engine {
 	g := gin.New()
 
-	g.Use(gin.Logger())
-	g.Use(cors.Default())
-	g.Use(NewRecovery())
+	g.Use(
+		gin.Logger(),
+		cors.Default(),
+		NewRecovery(),
+		NewAuth(),
+	)
 
 	group := g.Group("/api")
 	{
@@ -65,30 +75,36 @@ func initRouter() *gin.Engine {
 	return g
 }
 
-func Wrap[TReq any, TRes any](f func(*gin.Context, *TReq) (TRes, error)) func(c *gin.Context) {
+func Wrap[TReq any, TRes any](f func(*api.HttpContext, *TReq) (TRes, error)) func(c *gin.Context) {
 	return func(c *gin.Context) {
 		var req TReq
-		if err := c.ShouldBindUri(req); err != nil {
-			_ = c.AbortWithError(http.StatusBadRequest, err)
+
+		if err := c.ShouldBindUri(&req); err != nil {
+			c.String(http.StatusBadRequest, err.Error())
 			return
 		}
 
-		if c.Request.Method != http.MethodGet && c.Request.ContentLength > 0 {
-			if err := c.Bind(req); err != nil {
-				_ = c.AbortWithError(http.StatusBadRequest, err)
-				return
-			}
+		if err := c.ShouldBind(&req); err != nil {
+			c.String(http.StatusBadRequest, err.Error())
+			return
 		}
 
-		res, err := f(c, &req)
+		if err := validator.ValidateStruct(req); err != nil {
+			c.String(http.StatusBadRequest, err.Error())
+			return
+		}
+
+		ctx := &api.HttpContext{Context: c}
+		res, err := f(ctx, &req)
 		if err != nil {
-			_ = c.AbortWithError(http.StatusInternalServerError, err)
+			c.String(http.StatusInternalServerError, err.Error())
 			return
 		}
 
-		if c.Request.Response.ContentLength == 0 {
-			c.JSON(http.StatusOK, res)
+		if c.Writer.Size() >= 0 {
+			return
 		}
+		c.JSON(http.StatusOK, res)
 	}
 }
 

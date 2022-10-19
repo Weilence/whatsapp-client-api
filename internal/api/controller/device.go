@@ -1,12 +1,14 @@
 package controller
 
 import (
-	"github.com/gin-gonic/gin"
+	"github.com/mdp/qrterminal/v3"
+	"github.com/weilence/whatsapp-client/internal/api"
 	"github.com/weilence/whatsapp-client/internal/api/model"
 	"github.com/weilence/whatsapp-client/internal/pkg/whatsapp"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/types"
 	"io"
+	"os"
 )
 
 var version = ""
@@ -15,7 +17,7 @@ type deviceLoginReq struct {
 	Phone string `json:"phone"`
 }
 
-func DeviceLogin(c *gin.Context, req *deviceLoginReq) (_ struct{}, err error) {
+func DeviceLogin(c *api.HttpContext, req *deviceLoginReq) (_ struct{}, err error) {
 	c.Header("Content-Type", "text/event-stream")
 	c.Header("Cache-Control", "no-cache")
 	c.Header("Connection", "keep-alive")
@@ -36,6 +38,7 @@ func DeviceLogin(c *gin.Context, req *deviceLoginReq) (_ struct{}, err error) {
 			return false
 		case evt := <-qrChanItem:
 			if evt.Event == "code" {
+				qrterminal.GenerateHalfBlock(evt.Code, qrterminal.L, os.Stdout)
 				c.SSEvent("message", evt.Code)
 				return true
 			} else if evt == whatsmeow.QRChannelSuccess {
@@ -57,7 +60,7 @@ type deviceLogoutReq struct {
 	JID *types.JID `uri:"id"`
 }
 
-func DeviceLogout(c *gin.Context, req *deviceLogoutReq) (interface{}, error) {
+func DeviceLogout(c *api.HttpContext, req *deviceLogoutReq) (interface{}, error) {
 	client, err := whatsapp.GetClient(req.JID)
 	if err != nil {
 		return nil, err
@@ -80,7 +83,7 @@ type Device struct {
 	Online       bool   `json:"online"`
 }
 
-func DeviceQuery(c *gin.Context, _ *struct{}) (interface{}, error) {
+func DeviceQuery(c *api.HttpContext, _ *struct{}) (interface{}, error) {
 	devices, err := whatsapp.GetDevices()
 	if err != nil {
 		return nil, err
@@ -113,7 +116,7 @@ type deviceDeleteReq struct {
 	JID *types.JID `uri:"jid"`
 }
 
-func DeviceDelete(c *gin.Context, req *deviceDeleteReq) (interface{}, error) {
+func DeviceDelete(c *api.HttpContext, req *deviceDeleteReq) (interface{}, error) {
 	err := whatsapp.DeleteDevice(req.JID)
 	if err != nil {
 		return nil, err
