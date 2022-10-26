@@ -1,14 +1,13 @@
 package controller
 
 import (
-	"github.com/mdp/qrterminal/v3"
+	"io"
+
 	"github.com/weilence/whatsapp-client/internal/api"
 	"github.com/weilence/whatsapp-client/internal/api/model"
 	"github.com/weilence/whatsapp-client/internal/pkg/whatsapp"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/types"
-	"io"
-	"os"
 )
 
 var version = ""
@@ -38,7 +37,6 @@ func DeviceLogin(c *api.HttpContext, req *deviceLoginReq) (_ struct{}, err error
 			return false
 		case evt := <-qrChanItem:
 			if evt.Event == "code" {
-				qrterminal.GenerateHalfBlock(evt.Code, qrterminal.L, os.Stdout)
 				c.SSEvent("message", evt.Code)
 				return true
 			} else if evt == whatsmeow.QRChannelSuccess {

@@ -1,10 +1,11 @@
 package router
 
 import (
-	"github.com/gin-gonic/gin/binding"
-	"github.com/weilence/whatsapp-client/internal/api"
 	"log"
 	"net/http"
+
+	"github.com/gin-gonic/gin/binding"
+	"github.com/weilence/whatsapp-client/internal/api"
 
 	"github.com/weilence/whatsapp-client/config"
 	"github.com/weilence/whatsapp-client/internal/api/controller"
@@ -34,7 +35,8 @@ func initRouter() *gin.Engine {
 		gin.Logger(),
 		cors.Default(),
 		NewRecovery(),
-		NewAuth(),
+		NewError(),
+		// NewAuth(),
 	)
 
 	group := g.Group("/api")
@@ -42,7 +44,7 @@ func initRouter() *gin.Engine {
 		group.GET("/info", Wrap(controller.MachineInfo))
 
 		group.GET("/device", Wrap(controller.DeviceQuery))
-		group.POST("/device/login", Wrap(controller.DeviceLogin))
+		group.GET("/device/login", Wrap(controller.DeviceLogin))
 		group.POST("/device/:jid/logout", Wrap(controller.DeviceLogout))
 		group.DELETE("/device/:jid", Wrap(controller.DeviceDelete))
 
@@ -80,30 +82,31 @@ func Wrap[TReq any, TRes any](f func(*api.HttpContext, *TReq) (TRes, error)) fun
 		var req TReq
 
 		if err := c.ShouldBindUri(&req); err != nil {
-			c.String(http.StatusBadRequest, err.Error())
+			_ = c.AbortWithError(http.StatusBadRequest, err)
 			return
 		}
 
 		if err := c.ShouldBind(&req); err != nil {
-			c.String(http.StatusBadRequest, err.Error())
+			_ = c.AbortWithError(http.StatusBadRequest, err)
 			return
 		}
 
 		if err := validator.ValidateStruct(req); err != nil {
-			c.String(http.StatusBadRequest, err.Error())
+			_ = c.AbortWithError(http.StatusBadRequest, err)
 			return
 		}
 
 		ctx := &api.HttpContext{Context: c}
 		res, err := f(ctx, &req)
 		if err != nil {
-			c.String(http.StatusInternalServerError, err.Error())
+			_ = c.AbortWithError(http.StatusInternalServerError, err)
 			return
 		}
 
-		if c.Writer.Size() >= 0 {
+		if c.Writer.Written() {
 			return
 		}
+
 		c.JSON(http.StatusOK, res)
 	}
 }

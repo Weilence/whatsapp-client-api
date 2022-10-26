@@ -39,22 +39,36 @@ func (c *Client) EnableAutoReply() {
 				reply := c.autoReply.cache[key]
 				if reply.Type == 1 {
 					if reply.File == "" {
-						c.SendTextMessage(v.Info.Chat.String(), reply.Text)
+						err := c.SendTextMessage(v.Info.Chat.String(), reply.Text)
+						if err != nil {
+							log.Println(err)
+							return
+						}
 					} else {
 						bytes, err := os.ReadFile(reply.File)
 						if err != nil {
-							log.Panic(err)
+							log.Println(err)
+							return
 						}
 
-						c.SendImageMessage(v.Info.Chat.String(), bytes, reply.Text)
+						err = c.SendImageMessage(v.Info.Chat.String(), bytes, reply.Text)
+						if err != nil {
+							log.Println(err)
+							return
+						}
 					}
 				} else {
 					bytes, err := os.ReadFile(reply.File)
 					if err != nil {
-						log.Panic(err)
+						log.Println(err)
+						return
 					}
 
-					c.SendDocumentMessage(v.Info.Chat.String(), bytes, reply.Text)
+					err = c.SendDocumentMessage(v.Info.Chat.String(), bytes, reply.Text)
+					if err != nil {
+						log.Println(err)
+						return
+					}
 				}
 				break
 			}

@@ -9,7 +9,7 @@ func Close(closer io.Closer) {
 	if closer != nil {
 		err := closer.Close()
 		if err != nil {
-			log.Print(err)
+			log.Println(err)
 		}
 	}
 }

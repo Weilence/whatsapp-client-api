@@ -7,8 +7,8 @@ require (
 	github.com/gin-contrib/cors v1.4.0
 	github.com/gin-gonic/gin v1.8.1
 	github.com/mattn/go-ieproxy v0.0.9
+	github.com/mdp/qrterminal/v3 v3.0.0
 	github.com/samber/lo v1.33.0
-	github.com/spf13/cast v1.5.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.13.0
 	go.mau.fi/whatsmeow v0.0.0-20221015105944-0bf9b6cc91f1
@@ -18,8 +18,8 @@ require (
 
 require (
 	github.com/goccy/go-json v0.9.11 // indirect
-	github.com/mdp/qrterminal/v3 v3.0.0 // indirect
-	golang.org/x/exp v0.0.0-20221012211006-4de253d81b95 // indirect
+	github.com/spf13/cast v1.5.0 // indirect
+	golang.org/x/exp v0.0.0-20221026004748-78e5e7837ae6 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	rsc.io/qr v0.2.0 // indirect
 )
@@ -39,7 +39,7 @@ require (
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
-	github.com/mattn/go-sqlite3 v1.14.15 // indirect
+	github.com/mattn/go-sqlite3 v1.14.16 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
@@ -51,8 +51,8 @@ require (
 	github.com/ugorji/go/codec v1.2.7 // indirect
 	github.com/zserge/lorca v0.1.10
 	go.mau.fi/libsignal v0.0.0-20221015105917-d970e7c3c9cf // indirect
-	golang.org/x/crypto v0.0.0-20221012134737-56aed061732a // indirect
-	golang.org/x/net v0.0.0-20221017152216-f25eb7ecb193 // indirect
+	golang.org/x/crypto v0.1.0 // indirect
+	golang.org/x/net v0.1.0 // indirect
 	golang.org/x/sys v0.1.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect

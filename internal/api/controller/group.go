@@ -1,10 +1,11 @@
 package controller
 
 import (
+	"log"
+
 	"github.com/weilence/whatsapp-client/internal/api"
 	"github.com/weilence/whatsapp-client/internal/pkg/whatsapp"
 	"go.mau.fi/whatsmeow/types"
-	"log"
 )
 
 type Group struct {
@@ -71,7 +72,7 @@ func GroupJoin(c *api.HttpContext, req *groupJoinReq) (interface{}, error) {
 	}
 
 	groupJID, err := client.JoinGroupWithLink(req.Path)
-	log.Print("joined " + groupJID.String())
+	log.Println("joined " + groupJID.String())
 	if err != nil {
 		return nil, err
 	}
