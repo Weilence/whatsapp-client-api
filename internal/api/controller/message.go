@@ -1,14 +1,14 @@
 package controller
 
 import (
-	"github.com/weilence/whatsapp-client/internal/api"
-	"go.mau.fi/whatsmeow/types"
 	"io"
 	"log"
 	"mime/multipart"
 	"time"
 
-	"github.com/gin-gonic/gin"
+	"github.com/weilence/whatsapp-client/internal/api"
+	"go.mau.fi/whatsmeow/types"
+
 	"github.com/weilence/whatsapp-client/internal/api/model"
 	"github.com/weilence/whatsapp-client/internal/pkg/whatsapp"
 	"github.com/weilence/whatsapp-client/pkg/utils"
@@ -30,11 +30,11 @@ type (
 )
 
 type SendReq struct {
-	JID   *types.JID           `form:"jid"`
-	Phone string               `form:"phone"`
-	Type  int                  `form:"type"`
-	Text  string               `form:"text"`
-	File  multipart.FileHeader `form:"file"`
+	JID   *types.JID           `query:"jid"`
+	Phone string               `query:"phone"`
+	Type  int                  `query:"type"`
+	Text  string               `query:"text"`
+	File  multipart.FileHeader `query:"file"`
 }
 
 func MessageSend(c *api.HttpContext, req *SendReq) (interface{}, error) {
@@ -86,9 +86,9 @@ func MessageQuery(c *api.HttpContext, req *MessagesReq) (interface{}, error) {
 		Order("id desc").
 		Find(&list)
 
-	return gin.H{
-		"total": total,
-		"list":  list,
+	return model.ResponseList{
+		Total: total,
+		List:  list,
 	}, nil
 }
 

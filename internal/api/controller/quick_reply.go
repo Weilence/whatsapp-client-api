@@ -4,15 +4,14 @@ import (
 	"github.com/weilence/whatsapp-client/internal/api"
 	"github.com/weilence/whatsapp-client/internal/api/model"
 
-	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
 type (
 	QueryQuickReplyReq struct {
 		model.Pagination
-		Text  string `form:"text"`
-		Group string `form:"group"`
+		Text  string `query:"text"`
+		Group string `query:"group"`
 	}
 	QueryQuickReplyRes struct {
 		ID    uint   `json:"id"`
@@ -33,9 +32,9 @@ func QuickReplyQuery(c *api.HttpContext, req *QueryQuickReplyReq) (interface{}, 
 		Count(&total).
 		Find(&list)
 
-	return gin.H{
-		"total": total,
-		"list":  list,
+	return model.ResponseList{
+		Total: total,
+		List:  list,
 	}, nil
 }
 

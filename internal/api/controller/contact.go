@@ -1,10 +1,11 @@
 package controller
 
 import (
-	"github.com/weilence/whatsapp-client/internal/api"
-	"go.mau.fi/whatsmeow/types"
 	"sort"
 	"strings"
+
+	"github.com/weilence/whatsapp-client/internal/api"
+	"go.mau.fi/whatsmeow/types"
 
 	"github.com/weilence/whatsapp-client/internal/pkg/whatsapp"
 )
@@ -17,7 +18,7 @@ type Contact struct {
 }
 
 type contactQueryReq struct {
-	JID *types.JID `form:"jid"`
+	JID *types.JID `query:"jid"`
 }
 
 func ContactQuery(c *api.HttpContext, req *contactQueryReq) (interface{}, error) {

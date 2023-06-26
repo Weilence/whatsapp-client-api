@@ -16,7 +16,7 @@ type Group struct {
 }
 
 type groupQueryReq struct {
-	JID *types.JID `form:"jid" binding:"required"`
+	JID *types.JID `query:"jid" validate:"required"`
 }
 
 func GroupQuery(c *api.HttpContext, req *groupQueryReq) (interface{}, error) {
@@ -26,7 +26,7 @@ func GroupQuery(c *api.HttpContext, req *groupQueryReq) (interface{}, error) {
 	}
 	groups := client.GetGroups()
 
-	var data = make([]Group, len(groups))
+	data := make([]Group, len(groups))
 	for i, group := range groups {
 
 		participants := make([]string, len(group.Participants))

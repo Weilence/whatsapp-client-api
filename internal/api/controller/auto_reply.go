@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"github.com/gin-gonic/gin"
 	"github.com/weilence/whatsapp-client/internal/api"
 	"github.com/weilence/whatsapp-client/internal/api/model"
 	"github.com/weilence/whatsapp-client/internal/pkg/whatsapp"
@@ -32,9 +31,9 @@ func AutoReplyQuery(c *api.HttpContext, req *AutoReplyQueryReq) (interface{}, er
 		Scopes(model.Paginate(req.Pagination)).
 		Count(&total)
 
-	return gin.H{
-		"total": total,
-		"list":  list,
+	return model.ResponseList{
+		Total: total,
+		List:  list,
 	}, nil
 }
 
