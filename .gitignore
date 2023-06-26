@@ -3,3 +3,4 @@ data.db
 .DS_Store
 internal/router/www
 __debug_bin
+.vscode/settings.json

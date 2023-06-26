@@ -10,7 +10,7 @@ import (
 )
 
 func (c *Client) SendTextMessage(phone, text string) (err error) {
-	_, err = c.SendMessage(context.Background(), NewUserJID(phone), "", &proto.Message{Conversation: &text})
+	_, err = c.SendMessage(context.Background(), NewUserJID(phone), &proto.Message{Conversation: &text})
 	return
 }
 
@@ -21,7 +21,7 @@ func (c *Client) SendImageMessage(phone string, image []byte, caption string) (e
 	}
 	mimeType := http.DetectContentType(image)
 	fileLength := uint64(len(image))
-	_, err = c.SendMessage(context.Background(), NewUserJID(phone), "", &proto.Message{
+	_, err = c.SendMessage(context.Background(), NewUserJID(phone), &proto.Message{
 		ImageMessage: &proto.ImageMessage{
 			Caption:       &caption,
 			Url:           &uploaded.URL,
@@ -31,7 +31,8 @@ func (c *Client) SendImageMessage(phone string, image []byte, caption string) (e
 			FileEncSha256: uploaded.FileEncSHA256,
 			FileSha256:    uploaded.FileSHA256,
 			FileLength:    &fileLength,
-		}})
+		},
+	})
 	return
 }
 
@@ -42,7 +43,7 @@ func (c *Client) SendDocumentMessage(phone string, file []byte, filename string)
 	}
 	mimeType := http.DetectContentType(file)
 	fileLength := uint64(len(file))
-	_, err = c.SendMessage(context.Background(), NewUserJID(phone), "", &proto.Message{
+	_, err = c.SendMessage(context.Background(), NewUserJID(phone), &proto.Message{
 		DocumentMessage: &proto.DocumentMessage{
 			Url:           &uploaded.URL,
 			DirectPath:    &uploaded.DirectPath,

@@ -1,10 +1,13 @@
 package router
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
-	"github.com/gin-gonic/gin/binding"
+	"github.com/gookit/validate"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/weilence/whatsapp-client/internal/api"
 
 	"github.com/weilence/whatsapp-client/config"
@@ -12,34 +15,39 @@ import (
 	"github.com/weilence/whatsapp-client/internal/api/model"
 	"github.com/weilence/whatsapp-client/internal/pkg/whatsapp"
 
-	"github.com/gin-contrib/cors"
-	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 )
-
-var validator binding.StructValidator
 
 func init() {
 	config.Init()
 	model.Init()
 	whatsapp.Init(model.SqlDB())
-
-	validator = binding.Validator
-	binding.Validator = nil
 }
 
-func initRouter() *gin.Engine {
-	g := gin.New()
+type CustomValidator struct{}
 
-	g.Use(
-		gin.Logger(),
-		cors.Default(),
-		NewRecovery(),
-		NewError(),
-		// NewAuth(),
-	)
+func (cv *CustomValidator) Validate(i interface{}) error {
+	v := validate.Struct(i)
+	if !v.Validate() {
+		return v.Errors
+	}
+	return nil
+}
 
-	group := g.Group("/api")
+func initRouter() *echo.Echo {
+	e := echo.New()
+	e.Validator = &CustomValidator{}
+
+	// Middleware
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"*"},
+		AllowHeaders: []string{"*"},
+		AllowMethods: []string{"*"},
+	}))
+
+	group := e.Group("/api")
 	{
 		group.GET("/info", Wrap(controller.MachineInfo))
 
@@ -74,40 +82,37 @@ func initRouter() *gin.Engine {
 		group.DELETE("/auto-reply/:id", Wrap(controller.AutoReplyDelete))
 	}
 
-	return g
+	return e
 }
 
-func Wrap[TReq any, TRes any](f func(*api.HttpContext, *TReq) (TRes, error)) func(c *gin.Context) {
-	return func(c *gin.Context) {
+func Wrap[TReq any, TRes any](f func(*api.HttpContext, *TReq) (TRes, error)) echo.HandlerFunc {
+	return func(c echo.Context) error {
 		var req TReq
 
-		if err := c.ShouldBindUri(&req); err != nil {
-			_ = c.AbortWithError(http.StatusBadRequest, err)
-			return
+		if err := c.Bind(&req); err != nil {
+			return fmt.Errorf("bind request err: %w", err)
 		}
 
-		if err := c.ShouldBind(&req); err != nil {
-			_ = c.AbortWithError(http.StatusBadRequest, err)
-			return
-		}
-
-		if err := validator.ValidateStruct(req); err != nil {
-			_ = c.AbortWithError(http.StatusBadRequest, err)
-			return
+		if err := c.Validate(req); err != nil {
+			return fmt.Errorf("validate request err: %w", err)
 		}
 
 		ctx := &api.HttpContext{Context: c}
 		res, err := f(ctx, &req)
 		if err != nil {
-			_ = c.AbortWithError(http.StatusInternalServerError, err)
-			return
+			return err
 		}
 
-		if c.Writer.Written() {
-			return
+		if c.Response().Committed {
+			return nil
 		}
 
-		c.JSON(http.StatusOK, res)
+		err = c.JSON(http.StatusOK, res)
+		if err != nil {
+			return fmt.Errorf("response err: %w", err)
+		}
+
+		return nil
 	}
 }
 

@@ -1,8 +1,6 @@
 package controller
 
 import (
-	"io"
-
 	"github.com/weilence/whatsapp-client/internal/api"
 	"github.com/weilence/whatsapp-client/internal/api/model"
 	"github.com/weilence/whatsapp-client/internal/pkg/whatsapp"
@@ -16,10 +14,10 @@ type deviceLoginReq struct {
 	Phone string `json:"phone"`
 }
 
-func DeviceLogin(c *api.HttpContext, req *deviceLoginReq) (_ struct{}, err error) {
-	c.Header("Content-Type", "text/event-stream")
-	c.Header("Cache-Control", "no-cache")
-	c.Header("Connection", "keep-alive")
+func DeviceLogin(c *api.HttpContext, req *deviceLoginReq) (_ struct{}, _ error) {
+	c.Response().Header().Set("Content-Type", "text/event-stream")
+	c.Response().Header().Set("Cache-Control", "no-cache")
+	c.Response().Header().Set("Connection", "keep-alive")
 
 	client, qrChanItem, err := whatsapp.Login(c, req.Phone)
 	if err != nil {
@@ -31,26 +29,18 @@ func DeviceLogin(c *api.HttpContext, req *deviceLoginReq) (_ struct{}, err error
 		c.SSEvent("success", client.Store.ID.String())
 		return
 	}
-	c.Stream(func(w io.Writer) bool {
-		select {
-		case <-c.Writer.CloseNotify():
-			return false
-		case evt := <-qrChanItem:
-			if evt.Event == "code" {
-				c.SSEvent("message", evt.Code)
-				return true
-			} else if evt == whatsmeow.QRChannelSuccess {
-				c.SSEvent("success", client.Store.ID.String())
-				return false
-			} else if evt == whatsmeow.QRChannelScannedWithoutMultidevice {
-				c.SSEvent("error", "请开启多设备测试版")
-				return false
-			} else {
-				c.SSEvent("error", "扫码登录失败")
-				return false
-			}
+	for evt := range qrChanItem {
+		if evt.Event == "code" {
+			c.SSEvent("message", evt.Code)
+		} else if evt == whatsmeow.QRChannelSuccess {
+			c.SSEvent("success", client.Store.ID.String())
+		} else if evt == whatsmeow.QRChannelScannedWithoutMultidevice {
+			c.SSEvent("error", "请开启多设备测试版")
+		} else {
+			c.SSEvent("error", "扫码登录失败")
 		}
-	})
+	}
+
 	return
 }
 

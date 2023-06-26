@@ -1,18 +1,17 @@
 package controller
 
 import (
-	"github.com/weilence/whatsapp-client/internal/api"
 	"time"
 
-	"github.com/weilence/whatsapp-client/internal/api/model"
+	"github.com/weilence/whatsapp-client/internal/api"
 
-	"github.com/gin-gonic/gin"
+	"github.com/weilence/whatsapp-client/internal/api/model"
 )
 
 type (
 	ChatQueryReq struct {
 		model.Pagination
-		JID string `form:"jid"`
+		JID string `query:"jid"`
 	}
 	ChatQueryRes struct {
 		JID          string    `json:"jid"`
@@ -33,8 +32,8 @@ func ChatQuery(c *api.HttpContext, req *ChatQueryReq) (interface{}, error) {
 		Scopes(model.Paginate(req.Pagination)).
 		Find(&list)
 
-	return gin.H{
-		"total": total,
-		"list":  list,
+	return model.ResponseList{
+		Total: total,
+		List:  list,
 	}, nil
 }

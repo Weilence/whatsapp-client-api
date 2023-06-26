@@ -2,7 +2,10 @@ package api
 
 import (
 	"context"
-	"github.com/gin-gonic/gin"
+	"fmt"
+	"time"
+
+	"github.com/labstack/echo/v4"
 	"go.mau.fi/whatsmeow/types"
 )
 
@@ -16,13 +19,50 @@ type Context interface {
 }
 
 type HttpContext struct {
-	*gin.Context
+	echo.Context
+}
+
+// Deadline implements Context.
+func (c *HttpContext) Deadline() (deadline time.Time, ok bool) {
+	return c.Request().Context().Deadline()
+}
+
+// Done implements Context.
+func (c *HttpContext) Done() <-chan struct{} {
+	return c.Request().Context().Done()
+}
+
+// Err implements Context.
+func (c *HttpContext) Err() error {
+	return c.Request().Context().Err()
+}
+
+// Value implements Context.
+func (c *HttpContext) Value(key any) any {
+	return c.Request().Context().Value(key)
+}
+
+func (c *HttpContext) SSEvent(event string, data any) error {
+	_, err := c.Response().Writer.Write([]byte("event: " + event + "\n"))
+	if err != nil {
+		return fmt.Errorf("write event: %v, err: %w", event, err)
+	}
+	_, err = c.Response().Writer.Write([]byte("data: " + data.(string) + "\n\n"))
+	if err != nil {
+		return fmt.Errorf("write data: %v, err: %w", data, err)
+	}
+
+	return nil
 }
 
 var _ Context = (*HttpContext)(nil)
 
-func GetUser(c *gin.Context) *User {
-	jidStr := c.GetHeader("jid")
+func (h *HttpContext) CurrentUser() *User {
+	return GetUser(h)
+}
+
+func GetUser(c echo.Context) *User {
+	jidStr := c.Request().Header.Get("jid")
 	if jidStr == "" {
 		return nil
 	}
@@ -31,8 +71,4 @@ func GetUser(c *gin.Context) *User {
 		return nil
 	}
 	return &User{JID: jid}
-}
-
-func (h *HttpContext) CurrentUser() *User {
-	return GetUser(h.Context)
 }

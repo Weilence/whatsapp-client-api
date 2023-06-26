@@ -3,8 +3,8 @@ package model
 import "gorm.io/gorm"
 
 type Pagination struct {
-	Page int `json:"page,omitempty" form:"page,omitempty"`
-	Size int `json:"size,omitempty" form:"size,omitempty"`
+	Page int `json:"page,omitempty" query:"page,omitempty"`
+	Size int `json:"size,omitempty" query:"size,omitempty"`
 }
 
 func Paginate(p Pagination) func(db *gorm.DB) *gorm.DB {
