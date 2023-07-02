@@ -34,52 +34,56 @@ func (cv *CustomValidator) Validate(i interface{}) error {
 	return nil
 }
 
+type CustomBinder struct{ echo.DefaultBinder }
+
+// Bind implements echo.Binder.
+func (b *CustomBinder) Bind(i interface{}, c echo.Context) error {
+	if err := b.BindPathParams(c, i); err != nil {
+		return err
+	}
+
+	if err := b.BindQueryParams(c, i); err != nil {
+		return err
+	}
+
+	return b.BindBody(c, i)
+}
+
+var _ echo.Binder = (*CustomBinder)(nil)
+
 func initRouter() *echo.Echo {
 	e := echo.New()
 	e.Validator = &CustomValidator{}
+	e.Binder = &CustomBinder{}
 
 	// Middleware
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
-	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: []string{"*"},
-		AllowHeaders: []string{"*"},
-		AllowMethods: []string{"*"},
-	}))
+	corsConfig := middleware.DefaultCORSConfig
+	e.Use(middleware.CORSWithConfig(corsConfig))
 
 	group := e.Group("/api")
 	{
 		group.GET("/info", Wrap(controller.MachineInfo))
 
-		group.GET("/device", Wrap(controller.DeviceQuery))
+		group.GET("/device/list", Wrap(controller.DeviceList))
 		group.GET("/device/login", Wrap(controller.DeviceLogin))
-		group.POST("/device/:jid/logout", Wrap(controller.DeviceLogout))
-		group.DELETE("/device/:jid", Wrap(controller.DeviceDelete))
+		group.DELETE("/device", Wrap(controller.DeviceDelete))
+		group.GET("/device/status", Wrap(controller.DeviceStatus))
+		group.POST("/device/logout", Wrap(controller.DeviceLogout))
 
 		group.GET("/upload", Wrap(controller.UploadGet))
 		group.POST("/upload", Wrap(controller.UploadAdd))
 
-		group.GET("/group", Wrap(controller.GroupQuery))
-		group.GET("/group/:jid", Wrap(controller.GroupGet))
+		group.GET("/group/list", Wrap(controller.GroupList))
+		group.GET("/group", Wrap(controller.GroupGet))
 		group.POST("/group/join", Wrap(controller.GroupJoin))
 
-		group.GET("/contact", Wrap(controller.ContactQuery))
+		group.GET("/contact/list", Wrap(controller.ContactQuery))
 		group.PUT("/contact/verify", Wrap(controller.ContactVerify))
-
-		group.GET("/chat", Wrap(controller.ChatQuery))
 
 		group.GET("/message", Wrap(controller.MessageQuery))
 		group.POST("/message", Wrap(controller.MessageSend))
-
-		group.GET("/quick-reply", Wrap(controller.QuickReplyQuery))
-		group.POST("/quick-reply", Wrap(controller.QuickReplyAdd))
-		group.PUT("/quick-reply/:id", Wrap(controller.QuickReplyEdit))
-		group.DELETE("/quick-reply/:id", Wrap(controller.QuickReplyDelete))
-
-		group.GET("/auto-reply", Wrap(controller.AutoReplyQuery))
-		group.POST("/auto-reply", Wrap(controller.AutoReplyAdd))
-		group.PUT("/auto-reply/:id", Wrap(controller.AutoReplyEdit))
-		group.DELETE("/auto-reply/:id", Wrap(controller.AutoReplyDelete))
 	}
 
 	return e
@@ -107,7 +111,9 @@ func Wrap[TReq any, TRes any](f func(*api.HttpContext, *TReq) (TRes, error)) ech
 			return nil
 		}
 
-		err = c.JSON(http.StatusOK, res)
+		err = c.JSON(http.StatusOK, model.ResponseModel{
+			Data: res,
+		})
 		if err != nil {
 			return fmt.Errorf("response err: %w", err)
 		}

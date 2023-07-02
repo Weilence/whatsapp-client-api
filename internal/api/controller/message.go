@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"mime/multipart"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/weilence/whatsapp-client/internal/api/model"
 	"github.com/weilence/whatsapp-client/internal/pkg/whatsapp"
-	"github.com/weilence/whatsapp-client/pkg/utils"
 )
 
 type (
@@ -30,11 +30,10 @@ type (
 )
 
 type SendReq struct {
-	JID   *types.JID           `query:"jid"`
-	Phone string               `query:"phone"`
-	Type  int                  `query:"type"`
-	Text  string               `query:"text"`
-	File  multipart.FileHeader `query:"file"`
+	JID   types.JID `query:"jid"`
+	Phone string    `form:"phone"`
+	Type  int       `form:"type"`
+	Text  string    `form:"text"`
 }
 
 func MessageSend(c *api.HttpContext, req *SendReq) (interface{}, error) {
@@ -43,37 +42,42 @@ func MessageSend(c *api.HttpContext, req *SendReq) (interface{}, error) {
 		return nil, err
 	}
 
-	if req.File.Size == 0 {
-		if err = client.SendTextMessage(req.Phone, req.Text); err != nil {
+	var filename string
+	switch req.Type {
+	case 1:
+		image, err := c.FormFile("image")
+		if err != nil {
+			return nil, fmt.Errorf("get image error: %w", err)
+		}
+
+		bytes := FormFileData(image)
+		if err = client.SendImageMessage(whatsapp.NewUserJID(req.Phone), bytes, req.Text); err != nil {
 			return nil, err
 		}
-
-		model.DB.Save(&model.WhatsappSendMessage{
-			From: *req.JID,
-			To:   req.Phone,
-			Type: req.Type,
-			Text: req.Text,
-		})
-	} else {
-		bytes := FormFileData(req.File)
-
-		if req.Type == 1 {
-			if err = client.SendImageMessage(req.Phone, bytes, req.Text); err != nil {
-				return nil, err
-			}
-		} else if req.Type == 2 {
-			if err = client.SendDocumentMessage(req.Phone, bytes, req.Text); err != nil {
-				return nil, err
-			}
+	case 2:
+		file, err := c.FormFile("file")
+		if err != nil {
+			return nil, fmt.Errorf("get image error: %w", err)
 		}
-		model.DB.Save(&model.WhatsappSendMessage{
-			From:     *req.JID,
-			To:       req.Phone,
-			Type:     req.Type,
-			Text:     req.Text,
-			FileName: req.File.Filename,
-		})
+
+		filename = file.Filename
+		bytes := FormFileData(file)
+		if err = client.SendDocumentMessage(whatsapp.NewUserJID(req.Phone), bytes, filename, req.Text); err != nil {
+			return nil, err
+		}
 	}
+
+	db := model.DB.Save(&model.WhatsappSendMessage{
+		From:     req.JID,
+		To:       req.Phone,
+		Type:     req.Type,
+		Text:     req.Text,
+		FileName: filename,
+	})
+	if db.Error != nil {
+		return nil, fmt.Errorf("save message error: %w", db.Error)
+	}
+
 	return nil, nil
 }
 
@@ -92,12 +96,12 @@ func MessageQuery(c *api.HttpContext, req *MessagesReq) (interface{}, error) {
 	}, nil
 }
 
-func FormFileData(f multipart.FileHeader) []byte {
+func FormFileData(f *multipart.FileHeader) []byte {
 	file, err := f.Open()
-	defer utils.Close(file)
 	if err != nil {
 		log.Panic(err)
 	}
+	defer file.Close()
 
 	bytes, err := io.ReadAll(file)
 	if err != nil {

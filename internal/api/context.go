@@ -42,16 +42,17 @@ func (c *HttpContext) Value(key any) any {
 	return c.Request().Context().Value(key)
 }
 
-func (c *HttpContext) SSEvent(event string, data any) error {
+func (c *HttpContext) SSEvent(event string, data string) error {
 	_, err := c.Response().Writer.Write([]byte("event: " + event + "\n"))
 	if err != nil {
 		return fmt.Errorf("write event: %v, err: %w", event, err)
 	}
-	_, err = c.Response().Writer.Write([]byte("data: " + data.(string) + "\n\n"))
+	_, err = c.Response().Writer.Write([]byte("data: " + data + "\n\n"))
 	if err != nil {
 		return fmt.Errorf("write data: %v, err: %w", data, err)
 	}
 
+	c.Response().Flush()
 	return nil
 }
 
