@@ -3,11 +3,12 @@ package model
 import (
 	"database/sql/driver"
 	"encoding/json"
+	"log"
+	"time"
+
 	"go.mau.fi/whatsmeow/binary/proto"
 	"go.mau.fi/whatsmeow/types"
 	"gorm.io/gorm"
-	"log"
-	"time"
 )
 
 type WhatsappAutoReply struct {

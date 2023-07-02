@@ -1,8 +1,11 @@
 package controller
 
 import (
+	"fmt"
+	"log"
+	"net/http"
+
 	"github.com/weilence/whatsapp-client/internal/api"
-	"github.com/weilence/whatsapp-client/internal/api/model"
 	"github.com/weilence/whatsapp-client/internal/pkg/whatsapp"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/types"
@@ -11,15 +14,21 @@ import (
 var version = ""
 
 type deviceLoginReq struct {
-	Phone string `json:"phone"`
+	JID types.JID `query:"jid"`
 }
 
 func DeviceLogin(c *api.HttpContext, req *deviceLoginReq) (_ struct{}, _ error) {
 	c.Response().Header().Set("Content-Type", "text/event-stream")
 	c.Response().Header().Set("Cache-Control", "no-cache")
 	c.Response().Header().Set("Connection", "keep-alive")
+	c.Response().WriteHeader(http.StatusOK)
 
-	client, qrChanItem, err := whatsapp.Login(c, req.Phone)
+	client, err := whatsapp.NewClient(req.JID)
+	if err != nil {
+		c.SSEvent("error", err.Error())
+		return
+	}
+	qrChanItem, err := client.Login(c)
 	if err != nil {
 		c.SSEvent("error", err.Error())
 		return
@@ -29,6 +38,7 @@ func DeviceLogin(c *api.HttpContext, req *deviceLoginReq) (_ struct{}, _ error) 
 		c.SSEvent("success", client.Store.ID.String())
 		return
 	}
+
 	for evt := range qrChanItem {
 		if evt.Event == "code" {
 			c.SSEvent("message", evt.Code)
@@ -40,12 +50,11 @@ func DeviceLogin(c *api.HttpContext, req *deviceLoginReq) (_ struct{}, _ error) 
 			c.SSEvent("error", "扫码登录失败")
 		}
 	}
-
 	return
 }
 
 type deviceLogoutReq struct {
-	JID *types.JID `uri:"id"`
+	JID types.JID `query:"jid"`
 }
 
 func DeviceLogout(c *api.HttpContext, req *deviceLogoutReq) (interface{}, error) {
@@ -62,38 +71,27 @@ func DeviceLogout(c *api.HttpContext, req *deviceLogoutReq) (interface{}, error)
 	return nil, nil
 }
 
-type Device struct {
-	PushName     string `json:"pushName"`
-	Platform     string `json:"platform"`
-	Phone        string `json:"phone"`
-	Jid          string `json:"jid"`
-	BusinessName string `json:"businessName"`
-	Online       bool   `json:"online"`
+type DeviceListRes struct {
+	PushName     string    `json:"pushName"`
+	Platform     string    `json:"platform"`
+	Phone        string    `json:"phone"`
+	Jid          types.JID `json:"jid"`
+	BusinessName string    `json:"businessName"`
 }
 
-func DeviceQuery(c *api.HttpContext, _ *struct{}) (interface{}, error) {
+func DeviceList(c *api.HttpContext, _ *struct{}) (interface{}, error) {
 	devices, err := whatsapp.GetDevices()
 	if err != nil {
 		return nil, err
 	}
 
-	data := make([]Device, len(devices))
-	onlineClients := whatsapp.GetOnlineClients()
-
+	data := make([]DeviceListRes, len(devices))
 	for i, device := range devices {
-		data[i] = Device{
+		data[i] = DeviceListRes{
 			PushName:     device.PushName,
 			Platform:     device.Platform,
-			Phone:        device.ID.User,
-			Jid:          device.ID.String(),
+			Jid:          *device.ID,
 			BusinessName: device.BusinessName,
-		}
-
-		for _, client := range onlineClients {
-			if client.Phone() == data[i].Phone {
-				data[i].Online = true
-				break
-			}
 		}
 	}
 
@@ -101,7 +99,7 @@ func DeviceQuery(c *api.HttpContext, _ *struct{}) (interface{}, error) {
 }
 
 type deviceDeleteReq struct {
-	JID *types.JID `uri:"jid"`
+	JID *types.JID `query:"phone"`
 }
 
 func DeviceDelete(c *api.HttpContext, req *deviceDeleteReq) (interface{}, error) {
@@ -110,7 +108,30 @@ func DeviceDelete(c *api.HttpContext, req *deviceDeleteReq) (interface{}, error)
 		return nil, err
 	}
 
-	model.DB.Delete(&model.WhatsappChat{}, "device_jid = ?", req.JID)
-	model.DB.Delete(&model.WhatsappChatMessage{}, "device_jid = ?", req.JID)
 	return nil, nil
+}
+
+type deviceStatusReq struct {
+	JID types.JID `query:"jid"`
+}
+
+func DeviceStatus(c *api.HttpContext, req *deviceStatusReq) (string, error) {
+	client, err := whatsapp.GetClient(req.JID)
+	if err != nil {
+		log.Println(fmt.Errorf("get client err: %w", err))
+	}
+
+	if client == nil {
+		return "none", nil
+	}
+
+	if !client.IsConnected() {
+		return "disconnected", nil
+	}
+
+	if !client.IsLoggedIn() {
+		return "offline", nil
+	}
+
+	return "online", nil
 }

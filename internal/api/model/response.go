@@ -3,7 +3,7 @@ package model
 type ResponseModel struct {
 	Code    int         `json:"code"`
 	Message string      `json:"message,omitempty"`
-	Result  interface{} `json:"result,omitempty"`
+	Data    interface{} `json:"data,omitempty"`
 }
 
 type ResponseList struct {

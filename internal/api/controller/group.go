@@ -1,43 +1,46 @@
 package controller
 
 import (
+	"fmt"
 	"log"
+	"time"
 
 	"github.com/weilence/whatsapp-client/internal/api"
 	"github.com/weilence/whatsapp-client/internal/pkg/whatsapp"
 	"go.mau.fi/whatsmeow/types"
 )
 
-type Group struct {
-	JID          string   `json:"jid"`
-	Name         string   `json:"name"`
-	CreateTime   int64    `json:"createTime"`
-	Participants []string `json:"participants"`
+type groupListReq struct {
+	JID types.JID `query:"jid"`
+}
+type groupListRes struct {
+	Phone        types.JID   `json:"jid"`
+	Name         string      `json:"name"`
+	CreateTime   time.Time   `json:"createTime"`
+	Participants []types.JID `json:"participants"`
 }
 
-type groupQueryReq struct {
-	JID *types.JID `query:"jid" validate:"required"`
-}
-
-func GroupQuery(c *api.HttpContext, req *groupQueryReq) (interface{}, error) {
+func GroupList(c *api.HttpContext, req *groupListReq) (interface{}, error) {
 	client, err := whatsapp.GetClient(req.JID)
 	if err != nil {
 		return nil, err
 	}
-	groups := client.GetGroups()
+	groups, err := client.GetJoinedGroups()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get joined groups: %w", err)
+	}
 
-	data := make([]Group, len(groups))
+	data := make([]groupListRes, len(groups))
 	for i, group := range groups {
-
-		participants := make([]string, len(group.Participants))
+		participants := make([]types.JID, len(group.Participants))
 		for j, participant := range group.Participants {
-			participants[j] = participant.JID.String()
+			participants[j] = participant.JID
 		}
 
-		data[i] = Group{
-			JID:          group.JID.String(),
+		data[i] = groupListRes{
+			Phone:        group.JID,
 			Name:         group.Name,
-			CreateTime:   group.GroupCreated.UnixMilli(),
+			CreateTime:   group.GroupCreated,
 			Participants: participants,
 		}
 	}
@@ -45,7 +48,8 @@ func GroupQuery(c *api.HttpContext, req *groupQueryReq) (interface{}, error) {
 }
 
 type groupGetReq struct {
-	JID *types.JID `uri:"jid"`
+	JID      types.JID `query:"jid"`
+	GroupJID types.JID `query:"groupJID"`
 }
 
 func GroupGet(c *api.HttpContext, req *groupGetReq) (interface{}, error) {
@@ -53,16 +57,18 @@ func GroupGet(c *api.HttpContext, req *groupGetReq) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	info, err := client.GetGroupInfo(req.JID)
+
+	info, err := client.GetGroupInfo(req.GroupJID)
 	if err != nil {
 		return nil, err
 	}
+
 	return info, nil
 }
 
 type groupJoinReq struct {
-	JID  *types.JID `json:"jid"`
-	Path string     `json:"path"`
+	JID  types.JID `query:"jid"`
+	Path string    `json:"path"`
 }
 
 func GroupJoin(c *api.HttpContext, req *groupJoinReq) (interface{}, error) {

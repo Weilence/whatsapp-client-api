@@ -18,7 +18,7 @@ type Contact struct {
 }
 
 type contactQueryReq struct {
-	JID *types.JID `query:"jid"`
+	JID types.JID `query:"jid"`
 }
 
 func ContactQuery(c *api.HttpContext, req *contactQueryReq) (interface{}, error) {
@@ -56,13 +56,13 @@ func ContactQuery(c *api.HttpContext, req *contactQueryReq) (interface{}, error)
 
 type (
 	VerifyReq struct {
-		JID    *types.JID `json:"jid,omitempty"`
-		Phones []string   `json:"phones,omitempty"`
+		JID    types.JID `query:"jid"`
+		Phones []string  `json:"phones,omitempty"`
 	}
 
 	VerifyRes struct {
-		JID  *types.JID `json:"jid,omitempty"`
-		IsIn bool       `json:"isIn,omitempty"`
+		JID  types.JID `json:"jid"`
+		IsIn bool      `json:"isIn"`
 	}
 )
 
@@ -83,7 +83,7 @@ func ContactVerify(c *api.HttpContext, req *VerifyReq) ([]*VerifyRes, error) {
 
 	var res []*VerifyRes
 	for _, item := range r {
-		res = append(res, &VerifyRes{JID: &item.JID, IsIn: item.IsIn})
+		res = append(res, &VerifyRes{JID: item.JID, IsIn: item.IsIn})
 	}
 	return res, nil
 }
