@@ -8,18 +8,14 @@ import (
 	"github.com/gookit/validate"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/weilence/whatsapp-client/internal/api"
-
 	"github.com/weilence/whatsapp-client/config"
+	"github.com/weilence/whatsapp-client/internal/api"
 	"github.com/weilence/whatsapp-client/internal/api/controller"
 	"github.com/weilence/whatsapp-client/internal/api/model"
 	"github.com/weilence/whatsapp-client/internal/pkg/whatsapp"
-
-	"github.com/spf13/viper"
 )
 
 func init() {
-	config.Init()
 	model.Init()
 	whatsapp.Init(model.SqlDB())
 }
@@ -57,7 +53,9 @@ func initRouter() *echo.Echo {
 	e.Binder = &CustomBinder{}
 
 	// Middleware
-	e.Use(middleware.Logger())
+	if *config.Env == "dev" {
+		e.Use(middleware.Logger())
+	}
 	e.Use(middleware.Recover())
 	corsConfig := middleware.DefaultCORSConfig
 	e.Use(middleware.CORSWithConfig(corsConfig))
@@ -126,7 +124,7 @@ func RunServer() {
 	handler := initRouter()
 
 	server := http.Server{
-		Addr:    viper.GetString("web.host") + ":" + viper.GetString("web.port"),
+		Addr:    fmt.Sprintf("127.0.0.1:%d", *config.Port),
 		Handler: handler,
 	}
 
