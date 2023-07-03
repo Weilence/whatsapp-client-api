@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/weilence/whatsapp-client/internal/api"
 	"github.com/weilence/whatsapp-client/internal/pkg/whatsapp"
@@ -34,23 +35,42 @@ func DeviceLogin(c *api.HttpContext, req *deviceLoginReq) (_ struct{}, _ error) 
 		return
 	}
 
+	var jid *types.JID
 	if qrChanItem == nil {
-		c.SSEvent("success", client.Store.ID.String())
-		return
-	}
-
-	for evt := range qrChanItem {
-		if evt.Event == "code" {
-			c.SSEvent("message", evt.Code)
-		} else if evt == whatsmeow.QRChannelSuccess {
-			c.SSEvent("success", client.Store.ID.String())
-		} else if evt == whatsmeow.QRChannelScannedWithoutMultidevice {
-			c.SSEvent("error", "请开启多设备测试版")
-		} else {
-			c.SSEvent("error", "扫码登录失败")
+		jid = client.Store.ID
+	} else {
+		for evt := range qrChanItem {
+			if evt.Event == "code" {
+				c.SSEvent("message", evt.Code)
+			} else if evt == whatsmeow.QRChannelSuccess {
+				jid = client.Store.ID
+			} else if evt == whatsmeow.QRChannelScannedWithoutMultidevice {
+				c.SSEvent("error", "请开启多设备测试版")
+				return
+			} else {
+				c.SSEvent("error", "扫码登录失败")
+				return
+			}
 		}
 	}
-	return
+
+	ticker := time.NewTicker(time.Second)
+	timeout := time.After(time.Minute)
+	for {
+		select {
+		case <-ticker.C:
+			if client.IsLoggedIn() {
+				c.SSEvent("success", jid.String())
+				return
+			}
+		case <-c.Request().Context().Done():
+			log.Println("context done")
+			return
+		case <-timeout:
+			c.SSEvent("error", "连接超时")
+			return
+		}
+	}
 }
 
 type deviceLogoutReq struct {
@@ -115,23 +135,34 @@ type deviceStatusReq struct {
 	JID types.JID `query:"jid"`
 }
 
-func DeviceStatus(c *api.HttpContext, req *deviceStatusReq) (string, error) {
+type deviceStatusRes struct {
+	PushName     string `json:"pushName"`
+	BusinessName string `json:"businessName"`
+	Phone        string `json:"phone"`
+	Status       string `json:"status"`
+}
+
+func DeviceStatus(c *api.HttpContext, req *deviceStatusReq) (*deviceStatusRes, error) {
 	client, err := whatsapp.GetClient(req.JID)
 	if err != nil {
 		log.Println(fmt.Errorf("get client err: %w", err))
 	}
 
 	if client == nil {
-		return "none", nil
+		return &deviceStatusRes{Status: "disconnected"}, nil
 	}
 
-	if !client.IsConnected() {
-		return "disconnected", nil
+	res := &deviceStatusRes{
+		Phone:        client.Store.ID.User,
+		PushName:     client.Store.PushName,
+		BusinessName: client.Store.BusinessName,
 	}
 
 	if !client.IsLoggedIn() {
-		return "offline", nil
+		res.Status = "offline"
+	} else {
+		res.Status = "online"
 	}
 
-	return "online", nil
+	return res, nil
 }
