@@ -7,6 +7,7 @@ import (
 
 	"github.com/mattn/go-ieproxy"
 	"github.com/samber/lo"
+	"github.com/weilence/whatsapp-client/config"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/types"
 	"go.mau.fi/whatsmeow/types/events"
@@ -27,7 +28,13 @@ func NewClient(jid types.JID) (*Client, error) {
 		device = container.NewDevice()
 	}
 
-	logger := waLog.Stdout("Client_"+jid.String(), "DEBUG", true)
+	var logger waLog.Logger
+	if *config.Env == "dev" {
+		logger = waLog.Stdout("Client_"+jid.String(), "DEBUG", true)
+	} else {
+		logger = waLog.Stdout("Client_"+jid.String(), "INFO", true)
+	}
+
 	client := &Client{Client: whatsmeow.NewClient(device, logger)}
 	client.SetProxy(ieproxy.GetProxyFunc())
 

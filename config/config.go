@@ -1,27 +1,9 @@
 package config
 
-import (
-	"log"
+import "flag"
 
-	flag "github.com/spf13/pflag"
-	"github.com/spf13/viper"
+var (
+	ShowV = flag.Bool("version", false, "show version")
+	Env   = flag.String("env", "", "environment")
+	Port  = flag.Int("port", 0, "port")
 )
-
-var mode = flag.StringP("mode", "m", "dev", "run mode")
-
-func Init() {
-	viper.AddConfigPath("config")
-	viper.SetConfigType("yml")
-
-	viper.SetConfigName("config")
-	err := viper.ReadInConfig()
-	if err != nil {
-		log.Panic(err)
-	}
-
-	viper.SetConfigName("config." + *mode)
-	err = viper.MergeInConfig()
-	if err != nil {
-		log.Panic(err)
-	}
-}

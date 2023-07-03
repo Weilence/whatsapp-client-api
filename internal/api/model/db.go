@@ -5,6 +5,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/weilence/whatsapp-client/config"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -23,7 +24,10 @@ func Init() {
 		log.Panic(err)
 	}
 
-	db = db.Debug()
+	if *config.Env == "dev" {
+		db = db.Debug()
+	}
+
 	err = AutoMigrate(db)
 	if err != nil {
 		log.Panic(err)

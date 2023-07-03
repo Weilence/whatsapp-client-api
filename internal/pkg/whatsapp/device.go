@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/samber/lo"
+	"github.com/weilence/whatsapp-client/config"
 	"go.mau.fi/whatsmeow/binary/proto"
 	"go.mau.fi/whatsmeow/store"
 	"go.mau.fi/whatsmeow/store/sqlstore"
@@ -21,7 +22,13 @@ func init() {
 }
 
 func Init(db *sql.DB) {
-	logger := waLog.Stdout("Database", "DEBUG", true)
+	var logger waLog.Logger
+	if *config.Env == "dev" {
+		logger = waLog.Stdout("Database", "DEBUG", true)
+	} else {
+		logger = waLog.Stdout("Database", "INFO", true)
+	}
+
 	container = sqlstore.NewWithDB(db, "sqlite3", logger)
 	err := container.Upgrade()
 	if err != nil {

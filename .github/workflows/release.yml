@@ -7,46 +7,56 @@ on:
 
 jobs:
   build:
-    runs-on: windows-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    env:
+      PROJECT_NAME: whatsapp-client
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
 
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.17
+          go-version: "1.20"
 
       - uses: actions/cache@v3
         with:
-          path: |
-            ~\AppData\Local\go-build
-            ~\go\pkg\mod
+          path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
-      #    - name: Test
-      #      run: go test -v ./...
+          restore-keys: ${{ runner.os }}-go-
 
       - name: Build
         env:
-          GOARCH: amd64
-          GOOS: windows
           CGO_ENABLED: 1
-        run: go build -o bin/whatsapp-client-win64.exe -ldflags "-s -w -X whatsapp-client/api.version=${{ github.ref_name }} -X main.mode=release" -v
+        run: |
+          go build -ldflags "-X 'main.version=${{ github.ref }}' -X 'main.commitID=${{ github.sha }}' -X 'main.buildTime=${{ github.event.head_commit.timestamp }}'" -o ./dist/${{ env.PROJECT_NAME }} main.go
 
       - name: Run UPX
         uses: crazy-max/ghaction-upx@v1
         with:
           version: latest
-          files: ./bin/*.exe
-          args: -fq
+          files: ./dist/*
+          args: -fq     
 
-      - name: Compress
-        run: Compress-Archive ./bin/whatsapp-client-win64.exe ./bin/whatsapp-client-win64.zip
+      - name: Package (ubuntu-latest)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          cd dist
+          tar -czvf whatsapp-client.tar.gz ${{ env.PROJECT_NAME }}
+          rm ${{ env.PROJECT_NAME }}
+
+      - name: Package (windows-latest)
+        if: matrix.os == 'windows-latest'
+        run: |
+          Set-Location -Path dist
+          Rename-Item -Path ${{ env.PROJECT_NAME }} -NewName ${{ env.PROJECT_NAME }}.exe
+          Compress-Archive -Path ${{ env.PROJECT_NAME }}.exe -DestinationPath whatsapp-client.zip
+          rm ${{ env.PROJECT_NAME }}.exe
 
       - name: Upload Release
         uses: softprops/action-gh-release@v1
         with:
-          files: bin/*.zip
+          files: dist/*
           draft: true
