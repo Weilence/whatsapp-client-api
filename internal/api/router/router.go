@@ -63,6 +63,8 @@ func initRouter() *echo.Echo {
 	group := e.Group("/api")
 	{
 		group.GET("/info", Wrap(controller.MachineInfo))
+		group.POST("/proxy", Wrap(controller.SetProxy))
+		group.GET("/proxy/test", Wrap(controller.TestProxy))
 
 		group.GET("/device/list", Wrap(controller.DeviceList))
 		group.GET("/device/login", Wrap(controller.DeviceLogin))

@@ -3,6 +3,7 @@ module github.com/weilence/whatsapp-client
 go 1.20
 
 require (
+	github.com/BurntSushi/toml v1.3.2
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/gookit/validate v1.4.6
 	github.com/labstack/echo/v4 v4.10.2
