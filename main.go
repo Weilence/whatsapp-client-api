@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 
 	"github.com/weilence/whatsapp-client/config"
@@ -15,8 +14,6 @@ var (
 )
 
 func main() {
-	flag.Parse()
-
 	if *config.ShowV {
 		fmt.Println("Version:", version)
 		fmt.Println("Commit ID:", commitID)
