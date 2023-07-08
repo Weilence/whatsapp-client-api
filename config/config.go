@@ -26,7 +26,7 @@ func Parse() {
 
 	_, err := toml.DecodeFile("config.toml", Config)
 	if err != nil {
-		log.Fatalf("decode config err: %v", err)
+		log.Printf("decode config err: %v\n", err)
 	}
 }
 
