@@ -7,56 +7,46 @@ on:
 
 jobs:
   build:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
     env:
-      PROJECT_NAME: whatsapp-client
-    runs-on: ${{ matrix.os }}
+      NAME: whatsapp-client
+      LDFLAGS: "-X 'main.version=${{ github.ref }}' -X 'main.commitID=${{ github.sha }}' -X 'main.buildTime=${{ github.event.head_commit.timestamp }}'"
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v3
 
-      - name: Set up Go
-        uses: actions/setup-go@v2
+      - name: Setup Go
+        uses: actions/setup-go@v4
         with:
           go-version: "1.20"
+          check-latest: true
 
-      - uses: actions/cache@v3
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-go-
-
-      - name: Build
-        env:
-          CGO_ENABLED: 1
+      - name: Set up xgo
         run: |
-          go build -ldflags "-X 'main.version=${{ github.ref }}' -X 'main.commitID=${{ github.sha }}' -X 'main.buildTime=${{ github.event.head_commit.timestamp }}'" -o ./dist/${{ env.PROJECT_NAME }} main.go
+          docker pull techknowlogick/xgo:latest
+          go install src.techknowlogick.com/xgo@latest
 
+      - name: Build by xgo
+        run: |
+          mkdir bin
+          xgo --targets="windows/*,darwin-10.16/*" -ldflags="${LDFLAGS}" --out bin/${{ env.NAME }} . 
+      
+      - name: Rename
+        run: |
+          mv bin/${{ env.NAME }}-windows-4.0-386.exe bin/${{ env.NAME }}-386.exe
+          mv bin/${{ env.NAME }}-windows-4.0-amd64.exe bin/${{ env.NAME }}-amd64.exe
+          mv bin/${{ env.NAME }}-darwin-10.16-amd64 bin/${{ env.NAME }}-darwin-amd64
+          mv bin/${{ env.NAME }}-darwin-10.16-arm64 bin/${{ env.NAME }}-darwin-arm64
+    
       - name: Run UPX
         uses: crazy-max/ghaction-upx@v1
         with:
           version: latest
-          files: ./dist/*
-          args: -fq     
-
-      - name: Package (ubuntu-latest)
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          cd dist
-          tar -czvf whatsapp-client.tar.gz ${{ env.PROJECT_NAME }}
-          rm ${{ env.PROJECT_NAME }}
-
-      - name: Package (windows-latest)
-        if: matrix.os == 'windows-latest'
-        run: |
-          Set-Location -Path dist
-          Rename-Item -Path ${{ env.PROJECT_NAME }} -NewName ${{ env.PROJECT_NAME }}.exe
-          Compress-Archive -Path ${{ env.PROJECT_NAME }}.exe -DestinationPath whatsapp-client.zip
-          rm ${{ env.PROJECT_NAME }}.exe
+          files: ./bin/*
+          args: -fq
 
       - name: Upload Release
         uses: softprops/action-gh-release@v1
         with:
-          files: dist/*
+          files: ./bin/*
           draft: true
