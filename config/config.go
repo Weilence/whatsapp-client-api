@@ -9,9 +9,8 @@ import (
 )
 
 var (
-	ShowV = flag.Bool("version", false, "show version")
-	Env   = flag.String("env", "", "environment")
-	Port  = flag.Int("port", 0, "port")
+	Env  = flag.String("env", "", "environment")
+	Port = flag.Int("port", 0, "port")
 )
 
 var Config = &config{}
@@ -20,16 +19,14 @@ type config struct {
 	Proxy string
 }
 
-func init() {
-	flag.Parse()
-
+func Parse() {
 	if *Port == 0 {
 		log.Fatalln("port is required")
 	}
 
 	_, err := toml.DecodeFile("config.toml", Config)
 	if err != nil {
-		log.Printf("decode config err: %v", err)
+		log.Fatalf("decode config err: %v", err)
 	}
 }
 
