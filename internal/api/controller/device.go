@@ -29,6 +29,14 @@ func DeviceLogin(c *api.HttpContext, req *deviceLoginReq) (_ struct{}, _ error) 
 		c.SSEvent("error", err.Error())
 		return
 	}
+
+	proxy, err := getProxy()
+	if err != nil {
+		c.SSEvent("error", err.Error())
+		return
+	}
+	client.SetProxy(proxy)
+
 	qrChanItem, err := client.Login(c)
 	if err != nil {
 		c.SSEvent("error", err.Error())

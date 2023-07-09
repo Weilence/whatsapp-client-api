@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/mattn/go-ieproxy"
 	"github.com/samber/lo"
 	"github.com/weilence/whatsapp-client/config"
 	"go.mau.fi/whatsmeow"
@@ -36,8 +35,6 @@ func NewClient(jid types.JID) (*Client, error) {
 	}
 
 	client := &Client{Client: whatsmeow.NewClient(device, logger)}
-	client.SetProxy(ieproxy.GetProxyFunc())
-
 	addClient(client)
 	return client, nil
 }
