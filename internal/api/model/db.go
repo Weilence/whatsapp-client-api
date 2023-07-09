@@ -13,7 +13,7 @@ import (
 
 var DB *gorm.DB
 
-func Init() {
+func Setup() {
 	db, err := gorm.Open(sqlite.Open("file:data.db?_foreign_keys=off"), &gorm.Config{
 		DisableForeignKeyConstraintWhenMigrating: true,
 		NamingStrategy: schema.NamingStrategy{

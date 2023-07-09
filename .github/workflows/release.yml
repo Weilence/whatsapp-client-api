@@ -9,7 +9,7 @@ jobs:
   build:
     env:
       NAME: whatsapp-client
-      LDFLAGS: "-X 'main.version=${{ github.ref }}' -X 'main.commitID=${{ github.sha }}' -X 'main.buildTime=${{ github.event.head_commit.timestamp }}'"
+      LDFLAGS: "-X 'main.version=${{ github.ref_name }}' -X 'main.commitID=${{ github.sha }}' -X 'main.buildTime=${{ github.event.head_commit.timestamp }}'"
     runs-on: ubuntu-latest
     steps:
       - name: Check out code into the Go module directory

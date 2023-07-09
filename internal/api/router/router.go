@@ -15,11 +15,6 @@ import (
 	"github.com/weilence/whatsapp-client/internal/pkg/whatsapp"
 )
 
-func init() {
-	model.Init()
-	whatsapp.Init(model.SqlDB())
-}
-
 type CustomValidator struct{}
 
 func (cv *CustomValidator) Validate(i interface{}) error {
@@ -48,6 +43,9 @@ func (b *CustomBinder) Bind(i interface{}, c echo.Context) error {
 var _ echo.Binder = (*CustomBinder)(nil)
 
 func initRouter() *echo.Echo {
+	model.Setup()
+	whatsapp.Setup(model.SqlDB())
+
 	e := echo.New()
 	e.Validator = &CustomValidator{}
 	e.Binder = &CustomBinder{}

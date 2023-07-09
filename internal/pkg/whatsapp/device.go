@@ -21,7 +21,7 @@ func init() {
 	store.DeviceProps.PlatformType = proto.DeviceProps_CHROME.Enum()
 }
 
-func Init(db *sql.DB) {
+func Setup(db *sql.DB) {
 	var logger waLog.Logger
 	if *config.Env == "dev" {
 		logger = waLog.Stdout("Database", "DEBUG", true)
