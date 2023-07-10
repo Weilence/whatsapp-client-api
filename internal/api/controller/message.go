@@ -5,28 +5,11 @@ import (
 	"io"
 	"log"
 	"mime/multipart"
-	"time"
 
 	"github.com/weilence/whatsapp-client/internal/api"
 	"go.mau.fi/whatsmeow/types"
 
-	"github.com/weilence/whatsapp-client/internal/api/model"
 	"github.com/weilence/whatsapp-client/internal/pkg/whatsapp"
-)
-
-type (
-	MessagesReq struct {
-		model.Pagination
-	}
-	MessagesRes struct {
-		ID        uint      `json:"id,omitempty"`
-		From      string    `json:"from,omitempty"`
-		To        string    `json:"to,omitempty"`
-		Type      int       `json:"type,omitempty"`
-		Text      string    `json:"text,omitempty"`
-		FileName  string    `json:"fileName,omitempty"`
-		CreatedAt time.Time `json:"createdAt,omitempty"`
-	}
 )
 
 type SendReq struct {
@@ -65,35 +48,13 @@ func MessageSend(c *api.HttpContext, req *SendReq) (interface{}, error) {
 		if err = client.SendDocumentMessage(whatsapp.NewUserJID(req.Phone), bytes, filename, req.Text); err != nil {
 			return nil, err
 		}
-	}
-
-	db := model.DB.Save(&model.WhatsappSendMessage{
-		From:     req.JID,
-		To:       req.Phone,
-		Type:     req.Type,
-		Text:     req.Text,
-		FileName: filename,
-	})
-	if db.Error != nil {
-		return nil, fmt.Errorf("save message error: %w", db.Error)
+	default:
+		if err = client.SendTextMessage(whatsapp.NewUserJID(req.Phone), req.Text); err != nil {
+			return nil, err
+		}
 	}
 
 	return nil, nil
-}
-
-func MessageQuery(c *api.HttpContext, req *MessagesReq) (interface{}, error) {
-	var list []MessagesRes
-	var total int64
-	model.DB.Model(&model.WhatsappSendMessage{}).
-		Scopes(model.Paginate(req.Pagination)).
-		Count(&total).
-		Order("id desc").
-		Find(&list)
-
-	return model.ResponseList{
-		Total: total,
-		List:  list,
-	}, nil
 }
 
 func FormFileData(f *multipart.FileHeader) []byte {

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 
+	_ "github.com/glebarez/go-sqlite"
 	"github.com/samber/lo"
 	"github.com/weilence/whatsapp-client/config"
 	"go.mau.fi/whatsmeow/binary/proto"
@@ -21,7 +22,11 @@ func init() {
 	store.DeviceProps.PlatformType = proto.DeviceProps_CHROME.Enum()
 }
 
-func Setup(db *sql.DB) {
+func Setup() {
+	db, err := sql.Open("sqlite", "data.db")
+	if err != nil {
+		log.Fatal(err)
+	}
 	var logger waLog.Logger
 	if *config.Env == "dev" {
 		logger = waLog.Stdout("Database", "DEBUG", true)
@@ -30,7 +35,7 @@ func Setup(db *sql.DB) {
 	}
 
 	container = sqlstore.NewWithDB(db, "sqlite3", logger)
-	err := container.Upgrade()
+	err = container.Upgrade()
 	if err != nil {
 		log.Panic(err)
 	}

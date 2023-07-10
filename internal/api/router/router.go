@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	_ "github.com/glebarez/go-sqlite"
 	"github.com/gookit/validate"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -12,7 +13,6 @@ import (
 	"github.com/weilence/whatsapp-client/internal/api"
 	"github.com/weilence/whatsapp-client/internal/api/controller"
 	"github.com/weilence/whatsapp-client/internal/api/model"
-	"github.com/weilence/whatsapp-client/internal/pkg/whatsapp"
 )
 
 type CustomValidator struct{}
@@ -43,9 +43,6 @@ func (b *CustomBinder) Bind(i interface{}, c echo.Context) error {
 var _ echo.Binder = (*CustomBinder)(nil)
 
 func initRouter() *echo.Echo {
-	model.Setup()
-	whatsapp.Setup(model.SqlDB())
-
 	e := echo.New()
 	e.Validator = &CustomValidator{}
 	e.Binder = &CustomBinder{}
@@ -80,7 +77,6 @@ func initRouter() *echo.Echo {
 		group.GET("/contact/list", Wrap(controller.ContactQuery))
 		group.PUT("/contact/verify", Wrap(controller.ContactVerify))
 
-		group.GET("/message", Wrap(controller.MessageQuery))
 		group.POST("/message", Wrap(controller.MessageSend))
 	}
 

@@ -7,9 +7,37 @@ on:
 
 jobs:
   build:
+    strategy:
+      matrix:
+        target: [
+          {
+            "GOOS": "linux",
+            "GOARCH": "amd64",
+            "NAME": "whatsapp-client-linux-amd64",
+          },
+          {
+            "GOOS": "linux",
+            "GOARCH": "arm64",
+            "NAME": "whatsapp-client-linux-arm64",
+          },
+          {
+            "GOOS": "darwin",
+            "GOARCH": "amd64",
+            "NAME": "whatsapp-client-darwin-amd64",
+          },
+          {
+            "GOOS": "darwin",
+            "GOARCH": "arm64",
+            "NAME": "whatsapp-client-darwin-arm64",
+          },
+          {
+            "GOOS": "windows",
+            "GOARCH": "amd64",
+            "NAME": "whatsapp-client-windows-amd64.exe",
+          },
+        ]
     env:
-      NAME: whatsapp-client
-      LDFLAGS: "-X 'main.version=${{ github.ref_name }}' -X 'main.commitID=${{ github.sha }}' -X 'main.buildTime=${{ github.event.head_commit.timestamp }}'"
+      LDFLAGS: "-X 'main.version=${{ github.ref_name }}' -X 'main.commitID=${{ github.sha }}' -X 'main.buildTime=${{ github.event.head_commit.timestamp }}' -w -s"
     runs-on: ubuntu-latest
     steps:
       - name: Check out code into the Go module directory
@@ -21,24 +49,23 @@ jobs:
           go-version: "1.20"
           check-latest: true
 
-      - name: Set up xgo
-        run: |
-          docker pull techknowlogick/xgo:latest
-          go install src.techknowlogick.com/xgo@latest
+      - name: Setup Golang caches
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-golang-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-golang-
 
-      - name: Build by xgo
+      - name: Build
         run: |
-          mkdir bin
-          xgo --targets="windows/*,darwin-10.16/*" -ldflags="${LDFLAGS}" --out bin/${{ env.NAME }} . 
-      
-      - name: Rename
-        run: |
-          mv bin/${{ env.NAME }}-windows-4.0-386.exe bin/${{ env.NAME }}-386.exe
-          mv bin/${{ env.NAME }}-windows-4.0-amd64.exe bin/${{ env.NAME }}-amd64.exe
-          mv bin/${{ env.NAME }}-darwin-10.16-amd64 bin/${{ env.NAME }}-darwin-amd64
-          mv bin/${{ env.NAME }}-darwin-10.16-arm64 bin/${{ env.NAME }}-darwin-arm64
-    
-      - name: Run UPX
+          mkdir -p bin
+          GOOS=${{ matrix.target.GOOS }} GOARCH=${{ matrix.target.GOARCH }} go build -ldflags "${{ env.LDFLAGS }}" -o bin/${{ matrix.target.NAME }} main.go
+
+      - name: Run UPX (exclude darwin)
+        if: matrix.target.GOOS != 'darwin'
         uses: crazy-max/ghaction-upx@v1
         with:
           version: latest

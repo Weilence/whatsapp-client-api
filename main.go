@@ -6,6 +6,7 @@ import (
 
 	"github.com/weilence/whatsapp-client/config"
 	"github.com/weilence/whatsapp-client/internal/api/router"
+	"github.com/weilence/whatsapp-client/internal/pkg/whatsapp"
 )
 
 var (
@@ -27,6 +28,7 @@ func main() {
 	}
 
 	config.Parse()
+	whatsapp.Setup()
 
 	router.RunServer()
 }
