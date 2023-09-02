@@ -4,10 +4,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/weilence/whatsapp-client/internal/api"
+	"github.com/weilence/whatsapp-client/internal/utils"
 	"go.mau.fi/whatsmeow/types"
-
-	"github.com/weilence/whatsapp-client/internal/pkg/whatsapp"
 )
 
 type Contact struct {
@@ -21,8 +19,8 @@ type contactQueryReq struct {
 	JID types.JID `query:"jid"`
 }
 
-func ContactQuery(c *api.HttpContext, req *contactQueryReq) (interface{}, error) {
-	client, err := whatsapp.GetClient(req.JID)
+func ContactQuery(c *utils.HttpContext, req *contactQueryReq) (interface{}, error) {
+	client, err := utils.GetClient(req.JID)
 	if err != nil {
 		return nil, err
 	}
@@ -66,13 +64,13 @@ type (
 	}
 )
 
-func ContactVerify(c *api.HttpContext, req *VerifyReq) ([]*VerifyRes, error) {
+func ContactVerify(c *utils.HttpContext, req *VerifyReq) ([]*VerifyRes, error) {
 	for i := range req.Phones {
 		if req.Phones[0] != "+" {
 			req.Phones[i] = "+" + req.Phones[i]
 		}
 	}
-	client, err := whatsapp.GetClient(req.JID)
+	client, err := utils.GetClient(req.JID)
 	if err != nil {
 		return nil, err
 	}

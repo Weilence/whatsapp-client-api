@@ -2,7 +2,6 @@ package controller
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -10,8 +9,8 @@ import (
 	"github.com/denisbrodbeck/machineid"
 	"github.com/mattn/go-ieproxy"
 	"github.com/weilence/whatsapp-client/config"
-	"github.com/weilence/whatsapp-client/internal/api"
 	"github.com/weilence/whatsapp-client/internal/pkg/whatsapp"
+	"github.com/weilence/whatsapp-client/internal/utils"
 )
 
 type MachineInfoRes struct {
@@ -19,10 +18,10 @@ type MachineInfoRes struct {
 	Version   string `json:"version"`
 }
 
-func MachineInfo(_ *api.HttpContext, _ *struct{}) (_ interface{}, err error) {
+func MachineInfo(_ *utils.HttpContext, _ *struct{}) (_ interface{}, err error) {
 	machineID, err := machineid.ProtectedID("whatsapp-client")
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	machineID = strings.ToUpper(machineID[:16])
 
@@ -36,7 +35,7 @@ type SetProxyReq struct {
 	Url string `json:"url"`
 }
 
-func SetProxy(_ *api.HttpContext, req *SetProxyReq) (*struct{}, error) {
+func SetProxy(_ *utils.HttpContext, req *SetProxyReq) (*struct{}, error) {
 	proxyURL, err := url.Parse(req.Url)
 	if err != nil {
 		return nil, fmt.Errorf("proxy format err: %w", err)
@@ -53,7 +52,7 @@ func SetProxy(_ *api.HttpContext, req *SetProxyReq) (*struct{}, error) {
 	return nil, nil
 }
 
-func TestProxy(_ *api.HttpContext, _ *struct{}) (*struct{}, error) {
+func TestProxy(_ *utils.HttpContext, _ *struct{}) (*struct{}, error) {
 	proxy, err := getProxy()
 	if err != nil {
 		return nil, err

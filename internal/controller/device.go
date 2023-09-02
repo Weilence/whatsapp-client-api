@@ -1,13 +1,13 @@
 package controller
 
 import (
-	"fmt"
-	"log"
 	"net/http"
 	"time"
 
-	"github.com/weilence/whatsapp-client/internal/api"
+	"log/slog"
+
 	"github.com/weilence/whatsapp-client/internal/pkg/whatsapp"
+	"github.com/weilence/whatsapp-client/internal/utils"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/types"
 )
@@ -18,7 +18,7 @@ type deviceLoginReq struct {
 	JID types.JID `query:"jid"`
 }
 
-func DeviceLogin(c *api.HttpContext, req *deviceLoginReq) (_ struct{}, _ error) {
+func DeviceLogin(c *utils.HttpContext, req *deviceLoginReq) (_ struct{}, _ error) {
 	c.Response().Header().Set("Content-Type", "text/event-stream")
 	c.Response().Header().Set("Cache-Control", "no-cache")
 	c.Response().Header().Set("Connection", "keep-alive")
@@ -72,7 +72,6 @@ func DeviceLogin(c *api.HttpContext, req *deviceLoginReq) (_ struct{}, _ error) 
 				return
 			}
 		case <-c.Request().Context().Done():
-			log.Println("context done")
 			return
 		case <-timeout:
 			c.SSEvent("error", "连接超时")
@@ -85,8 +84,8 @@ type deviceLogoutReq struct {
 	JID types.JID `query:"jid"`
 }
 
-func DeviceLogout(c *api.HttpContext, req *deviceLogoutReq) (interface{}, error) {
-	client, err := whatsapp.GetClient(req.JID)
+func DeviceLogout(c *utils.HttpContext, req *deviceLogoutReq) (interface{}, error) {
+	client, err := utils.GetClient(req.JID)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +106,7 @@ type DeviceListRes struct {
 	BusinessName string    `json:"businessName"`
 }
 
-func DeviceList(c *api.HttpContext, _ *struct{}) (interface{}, error) {
+func DeviceList(c *utils.HttpContext, _ *struct{}) (interface{}, error) {
 	devices, err := whatsapp.GetDevices()
 	if err != nil {
 		return nil, err
@@ -130,7 +129,7 @@ type deviceDeleteReq struct {
 	JID *types.JID `query:"phone"`
 }
 
-func DeviceDelete(c *api.HttpContext, req *deviceDeleteReq) (interface{}, error) {
+func DeviceDelete(c *utils.HttpContext, req *deviceDeleteReq) (interface{}, error) {
 	err := whatsapp.DeleteDevice(req.JID)
 	if err != nil {
 		return nil, err
@@ -150,10 +149,10 @@ type deviceStatusRes struct {
 	Status       string `json:"status"`
 }
 
-func DeviceStatus(c *api.HttpContext, req *deviceStatusReq) (*deviceStatusRes, error) {
-	client, err := whatsapp.GetClient(req.JID)
+func DeviceStatus(c *utils.HttpContext, req *deviceStatusReq) (*deviceStatusRes, error) {
+	client, err := utils.GetClient(req.JID)
 	if err != nil {
-		log.Println(fmt.Errorf("get client err: %w", err))
+		slog.Error("get client", "err", err)
 	}
 
 	if client == nil {

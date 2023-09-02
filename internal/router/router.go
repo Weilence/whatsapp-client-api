@@ -1,8 +1,8 @@
 package router
 
 import (
+	"errors"
 	"fmt"
-	"log"
 	"net/http"
 
 	_ "github.com/glebarez/go-sqlite"
@@ -10,9 +10,9 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/weilence/whatsapp-client/config"
-	"github.com/weilence/whatsapp-client/internal/api"
-	"github.com/weilence/whatsapp-client/internal/api/controller"
-	"github.com/weilence/whatsapp-client/internal/api/model"
+	"github.com/weilence/whatsapp-client/internal/controller"
+	"github.com/weilence/whatsapp-client/internal/model"
+	"github.com/weilence/whatsapp-client/internal/utils"
 )
 
 type CustomValidator struct{}
@@ -83,7 +83,7 @@ func initRouter() *echo.Echo {
 	return e
 }
 
-func Wrap[TReq any, TRes any](f func(*api.HttpContext, *TReq) (TRes, error)) echo.HandlerFunc {
+func Wrap[TReq any, TRes any](f func(*utils.HttpContext, *TReq) (TRes, error)) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var req TReq
 
@@ -95,24 +95,22 @@ func Wrap[TReq any, TRes any](f func(*api.HttpContext, *TReq) (TRes, error)) ech
 			return fmt.Errorf("validate request err: %w", err)
 		}
 
-		ctx := &api.HttpContext{Context: c}
+		ctx := &utils.HttpContext{Context: c}
 		res, err := f(ctx, &req)
 		if err != nil {
-			return err
+			var m model.ResponseModel
+			if ok := errors.As(err, &m); ok {
+				return c.JSON(m.Code, m)
+			}
+
+			return c.JSON(http.StatusBadRequest, model.ResponseModel{Code: -1, Message: err.Error()})
 		}
 
 		if c.Response().Committed {
 			return nil
 		}
 
-		err = c.JSON(http.StatusOK, model.ResponseModel{
-			Data: res,
-		})
-		if err != nil {
-			return fmt.Errorf("response err: %w", err)
-		}
-
-		return nil
+		return c.JSON(http.StatusOK, model.ResponseModel{Data: res})
 	}
 }
 
@@ -125,6 +123,6 @@ func RunServer() {
 	}
 
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatalf("server listen err:%s", err)
+		panic(fmt.Errorf("server listen err: %w", err))
 	}
 }

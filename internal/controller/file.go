@@ -3,20 +3,19 @@ package controller
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
 
-	"github.com/weilence/whatsapp-client/internal/api"
+	"github.com/weilence/whatsapp-client/internal/utils"
 )
 
 func init() {
 	err := os.MkdirAll("uploads", os.ModePerm)
 	if err != nil {
-		log.Panic(err)
+		panic(err)
 	}
 }
 
-func UploadAdd(c *api.HttpContext, _ *struct{}) (interface{}, error) {
+func UploadAdd(c *utils.HttpContext, _ *struct{}) (interface{}, error) {
 	f, err := c.FormFile("file")
 	if err != nil {
 		return nil, fmt.Errorf("get form file: %w", err)
@@ -46,7 +45,7 @@ type uploadGetReq struct {
 	Path string `query:"path"`
 }
 
-func UploadGet(c *api.HttpContext, req *uploadGetReq) (interface{}, error) {
+func UploadGet(c *utils.HttpContext, req *uploadGetReq) (interface{}, error) {
 	c.File("uploads/" + req.Path)
 	return nil, nil
 }

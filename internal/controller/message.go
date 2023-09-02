@@ -3,13 +3,11 @@ package controller
 import (
 	"fmt"
 	"io"
-	"log"
 	"mime/multipart"
 
-	"github.com/weilence/whatsapp-client/internal/api"
-	"go.mau.fi/whatsmeow/types"
-
 	"github.com/weilence/whatsapp-client/internal/pkg/whatsapp"
+	"github.com/weilence/whatsapp-client/internal/utils"
+	"go.mau.fi/whatsmeow/types"
 )
 
 type SendReq struct {
@@ -19,8 +17,8 @@ type SendReq struct {
 	Text  string    `form:"text"`
 }
 
-func MessageSend(c *api.HttpContext, req *SendReq) (interface{}, error) {
-	client, err := whatsapp.GetClient(req.JID)
+func MessageSend(c *utils.HttpContext, req *SendReq) (interface{}, error) {
+	client, err := utils.GetClient(req.JID)
 	if err != nil {
 		return nil, err
 	}
@@ -60,13 +58,13 @@ func MessageSend(c *api.HttpContext, req *SendReq) (interface{}, error) {
 func FormFileData(f *multipart.FileHeader) []byte {
 	file, err := f.Open()
 	if err != nil {
-		log.Panic(err)
+		panic(err)
 	}
 	defer file.Close()
 
 	bytes, err := io.ReadAll(file)
 	if err != nil {
-		log.Panic(err)
+		panic(err)
 	}
 
 	return bytes

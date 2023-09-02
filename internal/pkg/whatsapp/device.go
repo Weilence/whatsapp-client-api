@@ -2,7 +2,6 @@ package whatsapp
 
 import (
 	"database/sql"
-	"log"
 
 	_ "github.com/glebarez/go-sqlite"
 	"github.com/samber/lo"
@@ -25,19 +24,19 @@ func init() {
 func Setup() {
 	db, err := sql.Open("sqlite", "data.db")
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 	var logger waLog.Logger
 	if *config.Env == "dev" {
 		logger = waLog.Stdout("Database", "DEBUG", true)
 	} else {
-		logger = waLog.Stdout("Database", "INFO", true)
+		logger = waLog.Stdout("Database", "INFO", false)
 	}
 
 	container = sqlstore.NewWithDB(db, "sqlite3", logger)
 	err = container.Upgrade()
 	if err != nil {
-		log.Panic(err)
+		panic(err)
 	}
 }
 

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/samber/lo"
 	"github.com/weilence/whatsapp-client/config"
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/types"
@@ -31,7 +30,7 @@ func NewClient(jid types.JID) (*Client, error) {
 	if *config.Env == "dev" {
 		logger = waLog.Stdout("Client_"+jid.String(), "DEBUG", true)
 	} else {
-		logger = waLog.Stdout("Client_"+jid.String(), "INFO", true)
+		logger = waLog.Stdout("Client_"+jid.String(), "INFO", false)
 	}
 
 	client := &Client{Client: whatsmeow.NewClient(device, logger)}
@@ -121,14 +120,4 @@ func removeClient(c *Client) {
 
 func GetClients() []*Client {
 	return clients
-}
-
-func GetClient(jid types.JID) (*Client, error) {
-	client, ok := lo.Find(clients, func(item *Client) bool {
-		return item.Store.ID != nil && *item.Store.ID == jid
-	})
-	if !ok {
-		return nil, errors.New("客户端未登录")
-	}
-	return client, nil
 }

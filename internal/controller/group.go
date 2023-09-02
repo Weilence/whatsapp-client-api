@@ -2,11 +2,11 @@ package controller
 
 import (
 	"fmt"
-	"log"
 	"time"
 
-	"github.com/weilence/whatsapp-client/internal/api"
-	"github.com/weilence/whatsapp-client/internal/pkg/whatsapp"
+	"log/slog"
+
+	"github.com/weilence/whatsapp-client/internal/utils"
 	"go.mau.fi/whatsmeow/types"
 )
 
@@ -20,8 +20,8 @@ type groupListRes struct {
 	Participants []types.JID `json:"participants"`
 }
 
-func GroupList(c *api.HttpContext, req *groupListReq) (interface{}, error) {
-	client, err := whatsapp.GetClient(req.JID)
+func GroupList(c *utils.HttpContext, req *groupListReq) (interface{}, error) {
+	client, err := utils.GetClient(req.JID)
 	if err != nil {
 		return nil, err
 	}
@@ -52,8 +52,8 @@ type groupGetReq struct {
 	GroupJID types.JID `query:"groupJID"`
 }
 
-func GroupGet(c *api.HttpContext, req *groupGetReq) (interface{}, error) {
-	client, err := whatsapp.GetClient(req.JID)
+func GroupGet(c *utils.HttpContext, req *groupGetReq) (interface{}, error) {
+	client, err := utils.GetClient(req.JID)
 	if err != nil {
 		return nil, err
 	}
@@ -68,19 +68,20 @@ func GroupGet(c *api.HttpContext, req *groupGetReq) (interface{}, error) {
 
 type groupJoinReq struct {
 	JID  types.JID `query:"jid"`
-	Path string    `json:"path"`
+	Code string    `query:"code"`
 }
 
-func GroupJoin(c *api.HttpContext, req *groupJoinReq) (interface{}, error) {
-	client, err := whatsapp.GetClient(req.JID)
+func GroupJoin(c *utils.HttpContext, req *groupJoinReq) (interface{}, error) {
+	client, err := utils.GetClient(req.JID)
 	if err != nil {
 		return nil, err
 	}
 
-	groupJID, err := client.JoinGroupWithLink(req.Path)
-	log.Println("joined " + groupJID.String())
+	groupJID, err := client.JoinGroupWithLink(req.Code)
 	if err != nil {
+		slog.Error("faild to join group", "err", err)
 		return nil, err
 	}
+	slog.Info("joined group", "jid", groupJID)
 	return nil, nil
 }

@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/weilence/whatsapp-client/config"
-	"github.com/weilence/whatsapp-client/internal/api/router"
 	"github.com/weilence/whatsapp-client/internal/pkg/whatsapp"
+	"github.com/weilence/whatsapp-client/internal/router"
 )
 
 var (
