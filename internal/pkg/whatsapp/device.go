@@ -6,7 +6,7 @@ import (
 	_ "github.com/glebarez/go-sqlite"
 	"github.com/samber/lo"
 	"github.com/weilence/whatsapp-client/config"
-	"go.mau.fi/whatsmeow/binary/proto"
+	"go.mau.fi/whatsmeow/proto/waCompanionReg"
 	"go.mau.fi/whatsmeow/store"
 	"go.mau.fi/whatsmeow/store/sqlstore"
 	"go.mau.fi/whatsmeow/types"
@@ -16,9 +16,8 @@ import (
 var container *sqlstore.Container
 
 func init() {
-	name := "Windows"
-	store.DeviceProps.Os = &name
-	store.DeviceProps.PlatformType = proto.DeviceProps_CHROME.Enum()
+	store.DeviceProps.Os = lo.ToPtr("Windows")
+	store.DeviceProps.PlatformType = waCompanionReg.DeviceProps_CHROME.Enum()
 }
 
 func Setup() {

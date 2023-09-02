@@ -3,3 +3,4 @@ data.db
 .DS_Store
 __debug_bin*
 .vscode
+config.toml

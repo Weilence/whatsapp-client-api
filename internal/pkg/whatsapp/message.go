@@ -6,12 +6,12 @@ import (
 	"net/http"
 
 	"go.mau.fi/whatsmeow"
-	"go.mau.fi/whatsmeow/binary/proto"
+	"go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/types"
 )
 
 func (c *Client) SendTextMessage(jid types.JID, text string) error {
-	_, err := c.SendMessage(context.Background(), jid.ToNonAD(), &proto.Message{Conversation: &text})
+	_, err := c.SendMessage(context.Background(), jid.ToNonAD(), &waE2E.Message{Conversation: &text})
 	if err != nil {
 		return fmt.Errorf("send text message failed: %w", err)
 	}
@@ -25,15 +25,15 @@ func (c *Client) SendImageMessage(jid types.JID, image []byte, text string) erro
 	}
 	mimeType := http.DetectContentType(image)
 	fileLength := uint64(len(image))
-	_, err = c.SendMessage(context.Background(), jid.ToNonAD(), &proto.Message{
-		ImageMessage: &proto.ImageMessage{
+	_, err = c.SendMessage(context.Background(), jid.ToNonAD(), &waE2E.Message{
+		ImageMessage: &waE2E.ImageMessage{
 			Caption:       &text,
-			Url:           &uploaded.URL,
+			URL:           &uploaded.URL,
 			DirectPath:    &uploaded.DirectPath,
 			MediaKey:      uploaded.MediaKey,
 			Mimetype:      &mimeType,
-			FileEncSha256: uploaded.FileEncSHA256,
-			FileSha256:    uploaded.FileSHA256,
+			FileEncSHA256: uploaded.FileEncSHA256,
+			FileSHA256:    uploaded.FileSHA256,
 			FileLength:    &fileLength,
 		},
 	})
@@ -51,16 +51,16 @@ func (c *Client) SendDocumentMessage(jid types.JID, file []byte, filename, text 
 	}
 	mimeType := http.DetectContentType(file)
 	fileLength := uint64(len(file))
-	_, err = c.SendMessage(context.Background(), jid.ToNonAD(), &proto.Message{
-		DocumentMessage: &proto.DocumentMessage{
+	_, err = c.SendMessage(context.Background(), jid.ToNonAD(), &waE2E.Message{
+		DocumentMessage: &waE2E.DocumentMessage{
 			Caption:       &text,
 			FileName:      &filename,
-			Url:           &uploaded.URL,
+			URL:           &uploaded.URL,
 			DirectPath:    &uploaded.DirectPath,
 			MediaKey:      uploaded.MediaKey,
 			Mimetype:      &mimeType,
-			FileEncSha256: uploaded.FileEncSHA256,
-			FileSha256:    uploaded.FileSHA256,
+			FileEncSHA256: uploaded.FileEncSHA256,
+			FileSHA256:    uploaded.FileSHA256,
 			FileLength:    &fileLength,
 		},
 	})
